@@ -1,14 +1,14 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import LearnGenetics from "./Components/Pages/LearnGenetics";
-import DNA from "./Components/DNA/DNA";
-import About from "./Components/Pages/About";
-import Home from "./Components/Pages/Home";
-import Counselling from "./Components/DNA/Counselling";
-import Login from "./Components/Auth/Login";
-import Register from "./Components/Auth/Register";
-import DNAAgentsDashboard from "./Components/DNA/DNAAgentsDashboard";
-import PatientDNAIntake from "./Components/DNA/PatientDNAIntake";
-import GeneticAssessmentAI from "./Components/Pages/GeneticAssessmentAI";
+import LearnGenetics from "./components/Pages/LearnGenetics";
+import DNA from "./components/DNA/DNA";
+import About from "./components/Pages/About";
+import Home from "./components/Pages/Home";
+import Counselling from "./components/DNA/Counselling";
+import Login from "./components/Auth/Login";
+import Register from "./components/Auth/Register";
+import DNAAgentsDashboard from "./components/DNA/DNAAgentsDashboard";
+import PatientDNAIntake from "./components/DNA/PatientDNAIntake";
+import GeneticAssessmentAI from "./components/Pages/GeneticAssessmentAI";
 function App() {
   return (
     <BrowserRouter>
