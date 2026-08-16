@@ -1,0 +1,565 @@
+/* ============================================================================
+   REPORT PDF VIEWER — CLINICAL MEDICAL REPORT STYLING
+   ============================================================================ */
+
+/* ─── Modal Overlay (Glassmorphism outer wrapper) ─── */
+.report-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 15, 30, 0.65);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  animation: reportModalFadeIn 0.3s ease;
+}
+
+@keyframes reportModalFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.report-modal-container {
+  position: relative;
+  width: 92vw;
+  max-width: 900px;
+  height: 92vh;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: reportModalSlideUp 0.35s ease;
+}
+
+@keyframes reportModalSlideUp {
+  from { opacity: 0; transform: translateY(30px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ─── Modal Toolbar ─── */
+.report-modal-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: rgba(15, 23, 42, 0.7);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  flex-shrink: 0;
+}
+
+.report-modal-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+
+.report-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.report-modal-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 1.1rem;
+}
+
+.report-modal-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.35);
+  transform: scale(1.05);
+}
+
+.report-modal-btn.download-btn {
+  background: rgba(74, 144, 164, 0.35);
+  border-color: rgba(74, 144, 164, 0.5);
+}
+
+.report-modal-btn.download-btn:hover {
+  background: #4A90A4;
+}
+
+.report-modal-btn.downloading {
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* ─── Scrollable Preview Area ─── */
+.report-preview-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px;
+  display: flex;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.3);
+}
+
+.report-preview-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.report-preview-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+/* ============================================================================
+   CLINICAL REPORT DOCUMENT (HTML2CANVAS / PRINT COMPATIBLE)
+   Plain white, 100% opaque, crisp typography, alternating rows, clean borders
+   ============================================================================ */
+.report-clinical-document {
+  width: 100%;
+  max-width: 780px;
+  background: #ffffff;
+  color: #0f172a;
+  font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;
+  font-size: 11pt;
+  line-height: 1.5;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.25);
+  border-radius: 4px;
+}
+
+.clinical-page {
+  padding: 44px 44px 32px;
+  background: #ffffff;
+  position: relative;
+  min-height: 1000px;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-delimiter {
+  border: none;
+  border-top: 2px dashed #cbd5e1;
+  margin: 0;
+  padding: 0;
+}
+
+/* ─── Running Headers & Footers ─── */
+.page-running-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 8.5pt;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 24px;
+}
+
+.clinical-page-footer {
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  font-size: 8pt;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ─── Cover Page ─── */
+.page-cover {
+  text-align: center;
+  justify-content: center;
+}
+
+.clinical-header-watermark {
+  font-size: 8pt;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.15em;
+  margin-bottom: 20px;
+}
+
+.cover-center-branding {
+  margin-bottom: 36px;
+}
+
+.cover-logo-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.logo-dna-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #2d6a7e;
+}
+
+.logo-text {
+  font-size: 26pt;
+  font-weight: 800;
+  color: #2d6a7e;
+  letter-spacing: 0.02em;
+}
+
+.cover-department-tag {
+  display: block;
+  font-size: 10pt;
+  font-weight: 600;
+  color: #4A90A4;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 16px;
+}
+
+.cover-main-title {
+  font-size: 22pt;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+
+.cover-doc-type {
+  font-size: 9.5pt;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.06em;
+}
+
+.cover-patient-summary-card {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  overflow: hidden;
+  max-width: 580px;
+  margin: 0 auto 28px;
+  text-align: left;
+}
+
+.card-heading-bar {
+  background: #f1f5f9;
+  padding: 8px 16px;
+  font-size: 9pt;
+  font-weight: 700;
+  color: #334155;
+  border-bottom: 1px solid #cbd5e1;
+  letter-spacing: 0.05em;
+}
+
+.cover-grid-two-col {
+  padding: 14px 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 20px;
+  background: #ffffff;
+}
+
+.cover-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cover-field .label {
+  font-size: 8.5pt;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.cover-field .val {
+  font-size: 10pt;
+  color: #0f172a;
+}
+
+.cover-field .val.bold {
+  font-weight: 700;
+}
+
+.risk-indicator-text.high { color: #dc2626; font-weight: 700; }
+.risk-indicator-text.moderate { color: #d97706; font-weight: 700; }
+.risk-indicator-text.low { color: #16a34a; font-weight: 700; }
+
+.cover-disclaimer-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 14px 18px;
+  font-size: 8pt;
+  color: #64748b;
+  line-height: 1.6;
+  text-align: left;
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+/* ─── Section Titles ─── */
+.clinical-section-title {
+  font-size: 13pt;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 14px;
+  padding-bottom: 6px;
+  border-bottom: 1.5px solid #2d6a7e;
+}
+
+.clinical-section-title .sec-num {
+  color: #4A90A4;
+  margin-right: 4px;
+}
+
+/* ─── Clinical Tables with Alternating Rows & Crisp Borders ─── */
+.clinical-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 22px;
+  font-size: 9.5pt;
+}
+
+.clinical-table th {
+  background: #f1f5f9;
+  color: #1e293b;
+  font-weight: 700;
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  text-align: left;
+}
+
+.clinical-table td {
+  padding: 7px 12px;
+  border: 1px solid #cbd5e1;
+  vertical-align: middle;
+}
+
+.clinical-table td.field-name {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+  width: 32%;
+}
+
+.clinical-table td.field-val {
+  color: #0f172a;
+}
+
+.clinical-table.zebra tbody tr:nth-child(even) td {
+  background-color: #fcfdfe;
+}
+
+.clinical-table.zebra tbody tr:nth-child(odd) td {
+  background-color: #ffffff;
+}
+
+.clinical-table td.bold {
+  font-weight: 700;
+}
+
+.clinical-table td.highlight-danger {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.compliance-banner-strip {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  padding: 8px 14px;
+  border-radius: 4px;
+  font-size: 8.5pt;
+  color: #166534;
+  margin-bottom: 20px;
+}
+
+/* ─── Risk Metrics Grid (Page 3) ─── */
+.clinical-risk-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.clinical-metric-card {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  text-align: center;
+}
+
+.metric-title {
+  font-size: 8pt;
+  color: #64748b;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.metric-big-num {
+  font-size: 16pt;
+  font-weight: 800;
+}
+
+.metric-big-num.risk-low { color: #16a34a; }
+.metric-big-num.risk-moderate { color: #d97706; }
+.metric-big-num.risk-high { color: #dc2626; }
+
+.metric-bar-bg {
+  width: 100%;
+  height: 5px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.metric-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+}
+
+.metric-bar-fill.risk-low { background: #16a34a; }
+.metric-bar-fill.risk-moderate { background: #d97706; }
+.metric-bar-fill.risk-high { background: #dc2626; }
+
+/* ─── Agent Clinical Cards (Page 4) ─── */
+.agent-clinical-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.agent-clinical-card {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 10px 14px;
+  background: #fdfdfe;
+}
+
+.agent-card-header-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.agent-icon-badge {
+  font-size: 12pt;
+}
+
+.agent-name-wrap h4 {
+  font-size: 10pt;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.agent-purpose-text {
+  font-size: 8pt;
+  color: #64748b;
+  font-style: italic;
+}
+
+.agent-status-tag {
+  margin-left: auto;
+  font-size: 7.5pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.agent-summary-p {
+  font-size: 9pt;
+  color: #334155;
+  margin: 0 0 6px;
+  line-height: 1.45;
+}
+
+.agent-pending-text {
+  font-size: 8.5pt;
+  color: #94a3b8;
+  font-style: italic;
+  margin: 0;
+}
+
+.clinical-table-mini {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 8pt;
+  background: #f8fafc;
+}
+
+.clinical-table-mini td {
+  padding: 3px 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.clinical-table-mini td.mini-lbl {
+  font-weight: 600;
+  color: #475569;
+  width: 30%;
+}
+
+.clinical-table-mini td.mini-val {
+  color: #0f172a;
+}
+
+/* ─── Recommendations (Page 5) ─── */
+.clinical-recommendations-list {
+  padding-left: 20px;
+  margin: 0 0 20px;
+  font-size: 9.5pt;
+  color: #1e293b;
+  line-height: 1.6;
+}
+
+.clinical-recommendations-list li {
+  margin-bottom: 6px;
+}
+
+.clinical-seal-box {
+  margin: 24px auto 10px;
+  padding: 12px;
+  border: 1.5px solid #2d6a7e;
+  border-radius: 6px;
+  text-align: center;
+  max-width: 380px;
+  background: #f8fafc;
+}
+
+.seal-text strong {
+  display: block;
+  font-size: 9pt;
+  color: #2d6a7e;
+  letter-spacing: 0.08em;
+}
+
+.seal-text span {
+  font-size: 7.5pt;
+  color: #64748b;
+}
+
+/* ─── Hidden html2canvas target ─── */
+.report-capture-hidden {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  width: 780px;
+  opacity: 1;
+  pointer-events: none;
+}
