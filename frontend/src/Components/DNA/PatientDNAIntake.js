@@ -7,10 +7,10 @@ import './PatientDNAIntake.css';
 import { evaluatePatient } from '../../data/dnaAgents';
 import ReportPDFViewer from './ReportPDFViewer';
 
-// Setup pdfjs worker
+// Setup pdfjs worker with unpkg module fallback
 if (typeof window !== 'undefined' && 'Worker' in window) {
   try {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version || '3.11.174'}/pdf.worker.min.js`;
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version || '4.0.379'}/build/pdf.worker.min.mjs`;
   } catch (e) {
     console.warn('PDF.js worker setup note:', e);
   }
