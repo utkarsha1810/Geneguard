@@ -37,6 +37,14 @@ const DoctorSchema = new mongoose.Schema(
       default: '400001',
       trim: true,
     },
+    lat: {
+      type: Number,
+      default: 18.9388,
+    },
+    lng: {
+      type: Number,
+      default: 72.8354,
+    },
     hospital: {
       type: String,
       default: 'Genomics Specialty Clinic',

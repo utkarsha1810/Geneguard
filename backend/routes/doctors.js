@@ -3,10 +3,28 @@ import Doctor from '../models/Doctor.js';
 
 const router = express.Router();
 
-// GET /api/doctors - Fetch all active/approved doctors from MongoDB with pincode & location support
+// Haversine formula to compute distance between two geographical points in kilometers
+function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
+  if (lat1 === undefined || lon1 === undefined || lat2 === undefined || lon2 === undefined) {
+    return 9999;
+  }
+  const R = 6371; // Earth radius in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c * 10) / 10;
+}
+
+// GET /api/doctors - Fetch all active/approved doctors from MongoDB with distance sorting
 router.get('/', async (req, res) => {
   try {
-    const { search, location, pincode, status } = req.query;
+    const { search, location, pincode, userLat, userLng, lat, lng, status } = req.query;
     const query = {};
 
     if (status) {
@@ -25,40 +43,37 @@ router.get('/', async (req, res) => {
       ];
     }
 
-    if (pincode && pincode.trim()) {
-      const pinStr = pincode.trim();
-      if (query.$or) {
-        query.$and = [
-          { $or: query.$or },
-          { $or: [{ pincode: pinStr }, { location: { $regex: pinStr, $options: 'i' } }] }
-        ];
-        delete query.$or;
-      } else {
-        query.$or = [{ pincode: pinStr }, { location: { $regex: pinStr, $options: 'i' } }];
-      }
-    } else if (location && location !== 'All') {
-      const locRegex = new RegExp(location, 'i');
-      if (query.$or) {
-        query.$and = [{ $or: query.$or }, { location: locRegex }];
-        delete query.$or;
-      } else {
-        query.location = locRegex;
-      }
-    }
+    const doctors = await Doctor.find(query).lean();
 
-    const doctors = await Doctor.find(query).sort({ createdAt: -1 });
+    const targetLat = parseFloat(userLat || lat);
+    const targetLng = parseFloat(userLng || lng);
 
-    // Custom sort: exact pincode match first
-    if (pincode && pincode.trim()) {
+    const doctorsWithDistance = doctors.map((doc) => {
+      const docLat = doc.lat || 18.9388;
+      const docLng = doc.lng || 72.8354;
+      let dist = 0;
+
+      if (!isNaN(targetLat) && !isNaN(targetLng)) {
+        dist = calculateHaversineDistance(targetLat, targetLng, docLat, docLng);
+      }
+      return {
+        ...doc,
+        distanceKm: dist,
+      };
+    });
+
+    if (!isNaN(targetLat) && !isNaN(targetLng)) {
+      doctorsWithDistance.sort((a, b) => a.distanceKm - b.distanceKm);
+    } else if (pincode && pincode.trim()) {
       const targetPin = pincode.trim();
-      doctors.sort((a, b) => {
+      doctorsWithDistance.sort((a, b) => {
         if (a.pincode === targetPin && b.pincode !== targetPin) return -1;
         if (b.pincode === targetPin && a.pincode !== targetPin) return 1;
         return 0;
       });
     }
 
-    res.json({ success: true, count: doctors.length, doctors });
+    res.json({ success: true, count: doctorsWithDistance.length, doctors: doctorsWithDistance });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }

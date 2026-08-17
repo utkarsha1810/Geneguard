@@ -1,9 +1,29 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import axios from 'axios';
 import { Search, Filter, Video, Phone, MessageSquare, Calendar, Award, MapPin, CheckCircle, Clock } from 'lucide-react';
 import './DoctorDirectory.css';
 
-// Curated verified Indian Genetic Specialists (Open Healthcare Network / Medical Council registered)
+// Default Mumbai Pincode & Reference Coordinates (Mumbai GPO)
+const DEFAULT_PINCODE = '400001';
+const DEFAULT_COORDS = { lat: 18.9388, lng: 72.8354 };
+
+// Haversine formula to compute distance between two geographical coordinates in kilometers
+function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
+  if (lat1 === undefined || lon1 === undefined || lat2 === undefined || lon2 === undefined) return 9999;
+  const R = 6371; // Earth radius in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c * 10) / 10;
+}
+
+// Fallback verified Indian Genetic Specialists with exact Mumbai coordinates
 const verifiedIndianDoctors = [
   {
     id: 'doc_in_1',
@@ -12,6 +32,8 @@ const verifiedIndianDoctors = [
     specialty: 'Clinical Geneticist',
     location: 'Mumbai, Maharashtra',
     pincode: '400012',
+    lat: 19.0022,
+    lng: 72.8427,
     registrationNumber: 'MCI-10001',
     experience: '15+ years',
     hospital: 'KEM Hospital, Parel',
@@ -20,7 +42,6 @@ const verifiedIndianDoctors = [
     status: 'Available',
     fee: '₹1,500',
     avatar: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=200&h=200&fit=crop',
-    country: 'India',
   },
   {
     id: 'doc_in_2',
@@ -29,6 +50,8 @@ const verifiedIndianDoctors = [
     specialty: 'Genetic Counselor',
     location: 'Mumbai, Maharashtra',
     pincode: '400012',
+    lat: 19.0041,
+    lng: 72.8432,
     registrationNumber: 'MCI-10002',
     experience: '10+ years',
     hospital: 'Tata Memorial Hospital, Parel',
@@ -37,7 +60,6 @@ const verifiedIndianDoctors = [
     status: 'Available',
     fee: '₹1,200',
     avatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=200&h=200&fit=crop',
-    country: 'India',
   },
   {
     id: 'doc_in_3',
@@ -46,6 +68,8 @@ const verifiedIndianDoctors = [
     specialty: 'Prenatal Genetics',
     location: 'Mumbai, Maharashtra',
     pincode: '400053',
+    lat: 19.1311,
+    lng: 72.8252,
     registrationNumber: 'MCI-10003',
     experience: '12+ years',
     hospital: 'Kokilaben Dhirubhai Ambani Hospital, Andheri West',
@@ -54,7 +78,6 @@ const verifiedIndianDoctors = [
     status: 'Available',
     fee: '₹1,800',
     avatar: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=200&h=200&fit=crop',
-    country: 'India',
   },
 ];
 
@@ -70,11 +93,11 @@ const DoctorDirectory = ({
   const [apiSource, setApiSource] = useState('Open Healthcare Network (India)');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSpecialty, setSelectedSpecialty] = useState('All');
-  const [selectedRegion, setSelectedRegion] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
 
   // Pincode & Location State
-  const [userPincode, setUserPincode] = useState('400001');
+  const [userPincode, setUserPincode] = useState(DEFAULT_PINCODE);
+  const [userCoords, setUserCoords] = useState(DEFAULT_COORDS);
   const [pincodeDistrict, setPincodeDistrict] = useState('Mumbai');
   const [pincodeState, setPincodeState] = useState('Maharashtra');
   const [locationStatus, setLocationStatus] = useState('Detecting your location…');
@@ -82,32 +105,54 @@ const DoctorDirectory = ({
   const [pincodeInput, setPincodeInput] = useState('');
   const [pincodeError, setPincodeError] = useState('');
 
-  // ── 1. HELPER: FETCH PINCODE DETAILS FROM POSTAL PINCODE API ───────────────
-  const fetchPincodeDetails = async (pin) => {
+  // ── STEP 2: GET DISTRICT, STATE & COORDS FOR A GIVEN PINCODE ───────────────
+  const fetchCoordsAndDetailsForPincode = useCallback(async (pin) => {
+    let dist = 'Mumbai';
+    let st = 'Maharashtra';
+    let coords = { ...DEFAULT_COORDS };
+
+    // 1. Get District & State from Postal Pincode API
     try {
-      const res = await axios.get(`https://api.postalpincode.in/pincode/${pin}`, { timeout: 4000 });
+      const res = await axios.get(`https://api.postalpincode.in/pincode/${pin}`, { timeout: 3500 });
       if (res.data && res.data[0] && res.data[0].Status === 'Success' && res.data[0].PostOffice?.length > 0) {
         const po = res.data[0].PostOffice[0];
-        setPincodeDistrict(po.District || po.Block || 'Mumbai');
-        setPincodeState(po.State || 'Maharashtra');
-        return { district: po.District || 'Mumbai', state: po.State || 'Maharashtra' };
+        dist = po.District || po.Block || 'Mumbai';
+        st = po.State || 'Maharashtra';
       }
     } catch (err) {
-      console.warn('Postal pincode API fetch note:', err.message);
+      console.warn('Postal pincode API note:', err.message);
     }
-    setPincodeDistrict('Mumbai');
-    setPincodeState('Maharashtra');
-    return { district: 'Mumbai', state: 'Maharashtra' };
-  };
 
-  // ── 2. DYNAMIC LOCATION & PINCODE DETECTION ────────────────────────────────
+    // 2. Get Coordinates from OpenStreetMap Nominatim API
+    try {
+      const nomRes = await axios.get(
+        `https://nominatim.openstreetmap.org/search?postalcode=${pin}&country=India&format=json`,
+        { timeout: 3500 }
+      );
+      if (nomRes.data && nomRes.data.length > 0) {
+        coords = {
+          lat: parseFloat(nomRes.data[0].lat),
+          lng: parseFloat(nomRes.data[0].lon),
+        };
+      }
+    } catch (nomErr) {
+      console.warn('Nominatim coordinates lookup note:', nomErr.message);
+    }
+
+    setPincodeDistrict(dist);
+    setPincodeState(st);
+    setUserCoords(coords);
+    return { district: dist, state: st, coords };
+  }, []);
+
+  // ── STEP 1: AUTO-DETECT USER LOCATION ON PAGE LOAD ─────────────────────────
   useEffect(() => {
     let isMounted = true;
 
-    const detectLocationAndPincode = async () => {
+    const detectUserLocation = async () => {
       setLocationStatus('Detecting your location…');
 
-      // Check 1: Patient profile location in localStorage
+      // Check 1: Patient Profile location check
       try {
         const storedProfile = JSON.parse(localStorage.getItem('geneGuardPatientProfile') || '{}');
         const intakeLoc = patientProfile.location || storedProfile.location;
@@ -116,16 +161,16 @@ const DoctorDirectory = ({
           if (match && isMounted) {
             const detectedPin = match[0];
             setUserPincode(detectedPin);
-            await fetchPincodeDetails(detectedPin);
+            await fetchCoordsAndDetailsForPincode(detectedPin);
             setLocationStatus('Patient Intake Profile');
             return;
           }
         }
       } catch (e) {
-        console.warn('Patient intake pincode check note:', e.message);
+        console.warn('Patient intake check note:', e.message);
       }
 
-      // Check 2: Browser Geolocation API + Nominatim Reverse Geocoding
+      // Check 2: Geolocation API + Reverse Geocoding
       if ('geolocation' in navigator) {
         try {
           const position = await new Promise((resolve, reject) => {
@@ -133,56 +178,77 @@ const DoctorDirectory = ({
           });
 
           const { latitude, longitude } = position.coords;
-          let detectedPin = '400001';
+          let detectedPin = DEFAULT_PINCODE;
 
+          // Attempt 1: Reverse Geocode via postalpincode latlong API
           try {
-            const nomRes = await axios.get(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
-              { timeout: 3000 }
-            );
-            if (nomRes.data?.address?.postcode && /^\d{6}$/.test(nomRes.data.address.postcode)) {
-              detectedPin = nomRes.data.address.postcode;
+            const pinRes = await axios.get(`https://api.postalpincode.in/latlong/${latitude}/${longitude}`, { timeout: 3000 });
+            if (pinRes.data && pinRes.data[0]?.PostOffice?.length > 0) {
+              const po = pinRes.data[0].PostOffice[0];
+              if (po.Pincode && /^\d{6}$/.test(po.Pincode)) {
+                detectedPin = po.Pincode;
+              }
             }
-          } catch (nomErr) {
-            console.warn('Nominatim reverse geocode note:', nomErr.message);
+          } catch (e) {
+            // Attempt 2: Reverse Geocode via OpenStreetMap Nominatim
+            try {
+              const nomRes = await axios.get(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
+                { timeout: 3000 }
+              );
+              if (nomRes.data?.address?.postcode && /^\d{6}$/.test(nomRes.data.address.postcode)) {
+                detectedPin = nomRes.data.address.postcode;
+              }
+            } catch (nomErr) {
+              console.warn('Reverse geocoding note:', nomErr.message);
+            }
           }
 
           if (isMounted) {
             setUserPincode(detectedPin);
-            await fetchPincodeDetails(detectedPin);
+            setUserCoords({ lat: latitude, lng: longitude });
+            await fetchCoordsAndDetailsForPincode(detectedPin);
             setLocationStatus('Browser Geolocation');
             return;
           }
         } catch (geoErr) {
-          console.log('Geolocation denied/unavailable, defaulting to Mumbai 400001:', geoErr.message);
+          console.log('Geolocation denied or timed out, using fallback:', geoErr.message);
         }
       }
 
       // Check 3: Default fallback (Mumbai 400001)
       if (isMounted) {
-        setUserPincode('400001');
-        await fetchPincodeDetails('400001');
+        setUserPincode(DEFAULT_PINCODE);
+        setUserCoords(DEFAULT_COORDS);
+        await fetchCoordsAndDetailsForPincode(DEFAULT_PINCODE);
         setLocationStatus('Default Location (Mumbai)');
       }
     };
 
-    detectLocationAndPincode();
+    detectUserLocation();
 
     return () => {
       isMounted = false;
     };
-  }, [patientProfile.location]);
+  }, [patientProfile.location, fetchCoordsAndDetailsForPincode]);
 
-  // ── 3. SYNC DOCTORS TO MONGO DB & FETCH ───────────────────────────────────
-  useEffect(() => {
-    const syncAndFetchDoctors = async () => {
-      try {
-        setIsLoading(true);
+  // ── STEP 3: FETCH & DISTANCE-SORT DOCTORS FROM MONGO DB ───────────────────
+  const fetchDoctorsFromMongoDB = useCallback(async (pin, coords) => {
+    try {
+      setIsLoading(true);
+      const res = await axios.get(
+        `${API_BASE_URL}/doctors?pincode=${pin}&userLat=${coords.lat}&userLng=${coords.lng}`
+      );
 
-        // Fetch supplementary doctors from MongoDB
-        const mongoRes = await axios.get(`${API_BASE_URL}/doctors`);
-        if (mongoRes.data?.doctors && mongoRes.data.doctors.length > 0) {
-          const mappedMongoDocs = mongoRes.data.doctors.map((doc) => ({
+      if (res.data?.doctors && res.data.doctors.length > 0) {
+        const mappedDocs = res.data.doctors.map((doc) => {
+          const docLat = doc.lat || 18.9388;
+          const docLng = doc.lng || 72.8354;
+          const dist = doc.distanceKm !== undefined
+            ? doc.distanceKm
+            : calculateHaversineDistance(coords.lat, coords.lng, docLat, docLng);
+
+          return {
             id: doc._id || doc.registrationNumber,
             _id: doc._id,
             name: doc.name,
@@ -190,6 +256,9 @@ const DoctorDirectory = ({
             specialty: doc.specialty || 'Medical Geneticist',
             location: doc.location || 'Mumbai, Maharashtra',
             pincode: doc.pincode || '400001',
+            lat: docLat,
+            lng: docLng,
+            distanceKm: dist,
             registrationNumber: doc.registrationNumber || 'REG-100',
             experience: doc.experience || '5+ years',
             hospital: doc.hospital || 'Specialty Genomics Hospital',
@@ -199,22 +268,23 @@ const DoctorDirectory = ({
             rawStatus: doc.status,
             fee: doc.consultationFee || '₹1,500',
             avatar: doc.avatar || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=200&h=200&fit=crop',
-            country: 'India',
             source: doc.source || 'manual',
-          }));
+          };
+        });
 
-          setDoctors(mappedMongoDocs);
-          setApiSource('GeneGuard Verified MongoDB Network');
-        }
-      } catch (err) {
-        console.warn('Doctor Directory loading note:', err.message);
-      } finally {
-        setIsLoading(false);
+        setDoctors(mappedDocs);
+        setApiSource('GeneGuard MongoDB Genomics Registry');
       }
-    };
-
-    syncAndFetchDoctors();
+    } catch (err) {
+      console.warn('Fetch doctors API note:', err.message);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchDoctorsFromMongoDB(userPincode, userCoords);
+  }, [userPincode, userCoords, fetchDoctorsFromMongoDB]);
 
   const specialties = useMemo(() => {
     const set = new Set(['All']);
@@ -234,9 +304,8 @@ const DoctorDirectory = ({
     return Array.from(set);
   }, [doctors]);
 
-  // ── 4. PINCODE-BASED FILTERING & RANKING ───────────────────────────────────
+  // ── STEP 4: DISTANCE-SORTED FILTERING & RADIUS EXPANSION ─────────────────
   const filteredDoctors = useMemo(() => {
-    // Basic filter pass
     let list = doctors.filter((doc) => {
       if (doc.rawStatus === 'rejected') return false;
 
@@ -257,42 +326,27 @@ const DoctorDirectory = ({
       return matchSearch && matchSpecialty && matchStatus;
     });
 
-    // Pincode Ranking Logic:
-    // Sort exact pincode match first -> Same district/city second -> Others third
-    list.sort((a, b) => {
-      const aPinMatch = a.pincode === userPincode;
-      const bPinMatch = b.pincode === userPincode;
-
-      if (aPinMatch && !bPinMatch) return -1;
-      if (!aPinMatch && bPinMatch) return 1;
-
-      const districtLower = pincodeDistrict.toLowerCase();
-      const aDistMatch = (a.location && a.location.toLowerCase().includes(districtLower)) || (a.hospital && a.hospital.toLowerCase().includes(districtLower));
-      const bDistMatch = (b.location && b.location.toLowerCase().includes(districtLower)) || (b.hospital && b.hospital.toLowerCase().includes(districtLower));
-
-      if (aDistMatch && !bDistMatch) return -1;
-      if (!aDistMatch && bDistMatch) return 1;
-
-      return 0;
-    });
+    // Ensure strict ascending distance sorting
+    list.sort((a, b) => (a.distanceKm || 0) - (b.distanceKm || 0));
 
     return list;
-  }, [doctors, searchTerm, selectedSpecialty, statusFilter, userPincode, pincodeDistrict]);
+  }, [doctors, searchTerm, selectedSpecialty, statusFilter]);
 
-  // ── 5. MANUAL PINCODE OVERRIDE HANDLER ────────────────────────────────────
+  // ── MANUAL PINCODE OVERRIDE HANDLER ──────────────────────────────────────
   const handleApplyCustomPincode = async () => {
     setPincodeError('');
     const cleanPin = pincodeInput.trim();
 
     if (!/^\d{6}$/.test(cleanPin)) {
-      setPincodeError('Pincode must be exactly 6 digits (e.g. 400012)');
+      setPincodeError('Please enter a valid 6-digit pincode (e.g. 400012)');
       return;
     }
 
     setUserPincode(cleanPin);
     setLocationStatus('User Specified');
     setIsEditingPincode(false);
-    await fetchPincodeDetails(cleanPin);
+    const details = await fetchCoordsAndDetailsForPincode(cleanPin);
+    await fetchDoctorsFromMongoDB(cleanPin, details.coords);
   };
 
   const handleClearLocation = () => {
@@ -309,7 +363,7 @@ const DoctorDirectory = ({
           <span className="directory-badge">Verified Genomics Network</span>
           <h2>Connect with Certified Genetic Specialists</h2>
           <p>
-            Real-time directory powered by {apiSource}. Instant chat, audio, or HD video consultation with direct medical record integration.
+            Real-time directory powered by {apiSource}. Distance-sorted nearest doctor discovery with direct intake form integration.
           </p>
         </div>
         <div className="directory-stats-chip">
@@ -318,12 +372,12 @@ const DoctorDirectory = ({
         </div>
       </div>
 
-      {/* ─── Pincode Location Filter Banner (PART 3) ─── */}
+      {/* ─── STEP 4: Pincode & Distance Location Filter Banner ─── */}
       <div className="user-location-banner">
         <div className="location-badge-pill">
           <MapPin size={18} />
           <span>
-            Showing doctors near pincode <strong>{userPincode}</strong> ({pincodeDistrict}, {pincodeState})
+            Showing doctors near <strong>{userPincode}</strong> ({pincodeDistrict}, {pincodeState})
           </span>
           <span className="location-source-tag">[{locationStatus}]</span>
         </div>
@@ -358,7 +412,7 @@ const DoctorDirectory = ({
           </div>
         ) : (
           <button className="location-change-btn" onClick={handleClearLocation}>
-            Change Pincode
+            Change Location
           </button>
         )}
 
@@ -404,41 +458,43 @@ const DoctorDirectory = ({
         </div>
       </div>
 
-      {/* ─── Doctor Cards Grid ─── */}
+      {/* ─── Doctor Cards Grid (STEP 4) ─── */}
       {isLoading && doctors.length === 0 ? (
         <div className="directory-loading">
           <div className="directory-spinner"></div>
-          <p>Loading certified genetic specialists registry...</p>
+          <p>Calculating distance to nearby genetic specialists...</p>
         </div>
       ) : filteredDoctors.length === 0 ? (
         <div className="directory-empty">
-          <p>No doctors found near pincode <strong>{userPincode}</strong> ({pincodeDistrict}).</p>
+          <p>No doctors found near this location. Try a different pincode.</p>
           <button
             className="directory-reset-btn"
             onClick={() => {
               setSearchTerm('');
               setSelectedSpecialty('All');
               setStatusFilter('All');
-              setUserPincode('400001');
-              setPincodeDistrict('Mumbai');
+              setUserPincode(DEFAULT_PINCODE);
+              setUserCoords(DEFAULT_COORDS);
+              fetchCoordsAndDetailsForPincode(DEFAULT_PINCODE);
             }}
           >
-            Reset Pincode & Filters
+            Reset Location & Filters
           </button>
         </div>
       ) : (
         <div className="doctors-grid">
           {filteredDoctors.map((doctor) => {
             const isOnline = doctor.status === 'Available';
-            const isExactPincode = doctor.pincode === userPincode;
+            const distance = doctor.distanceKm !== undefined ? doctor.distanceKm : 0;
+            const isNearby = distance < 5;
+
             return (
               <div key={doctor.id} className={`doctor-card ${isOnline ? 'is-available' : 'is-busy'}`}>
-                {/* Pincode Tag Badge */}
-                {isExactPincode && (
-                  <div className="exact-pincode-badge">
-                    ⚡ Exact Pincode Match ({doctor.pincode})
-                  </div>
-                )}
+                {/* Distance Badge Pill (STEP 4) */}
+                <div className={`doctor-distance-badge ${isNearby ? 'is-closest' : ''}`}>
+                  <MapPin size={12} />
+                  <span>{distance} km away</span>
+                </div>
 
                 {/* Doctor Card Top */}
                 <div className="doctor-card-top">
