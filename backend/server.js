@@ -13,12 +13,16 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
+import { validateEnvironment } from './config/envCheck.js';
 
 // Route imports
 import dnaAgentsRouter from './routes/dnaAgents.js';
 import healthRouter from './routes/health.js';
 import patientsRouter from './routes/patients.js';
 import consultationsRouter from './routes/consultations.js';
+import authRouter from './routes/auth.js';
+import adminRouter from './routes/adminRoutes.js';
+import doctorsRouter from './routes/doctors.js';
 
 // Service imports
 import {
@@ -80,6 +84,15 @@ app.use('/api/dna', dnaAgentsRouter);
 
 // Patient endpoints (prepared for Phase 4 auth)
 app.use('/api/patients', patientsRouter);
+
+// Auth endpoints (Signup, Login, Token generation)
+app.use('/api/auth', authRouter);
+
+// Doctor endpoints (Directory and API Sync)
+app.use('/api/doctors', doctorsRouter);
+
+// Admin endpoints (Protected overview, user/doctor/patient management, analytics & system settings)
+app.use('/api/admin', adminRouter);
 
 // Consultation & Appointment endpoints (Agora & Doctor sessions)
 app.use('/api', consultationsRouter);
@@ -166,9 +179,9 @@ app.use((req, res) => {
 // SERVER STARTUP
 // ============================================================================
 
-const PORT = process.env.PORT || 5050;
-
 const startServer = async () => {
+  validateEnvironment();
+  const PORT = process.env.PORT || 5050;
   logger(`Starting Gene-Guard backend on port ${PORT}...`);
 
   // Check API key

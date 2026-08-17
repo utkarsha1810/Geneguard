@@ -1196,14 +1196,18 @@
   background: var(--primary-brown);
 }
 
-/* Custom navbar and page container overrides for disorders page wrapper */
+/* Custom navbar overrides for disorders page wrapper.
+   NOTE: padding values are matched 1:1 to Home's default (1.5rem) and
+   scrolled (0.75rem) states so the navbar spacing is identical to Home —
+   only the background stays solid/dark here (rather than transparent)
+   because the Disorders hero is light-colored and needs contrast. */
 .disorders-page-wrapper .home-main-navbar {
-  background: rgba(15, 23, 42, 0.95);
+  background: rgba(15, 23, 42, 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(46, 125, 50, 0.2);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.15);
-  padding: 0.75rem 0;
+  padding: 1.5rem 0;
 }
 
 .disorders-page-wrapper .home-navbar-scrolled {
@@ -1219,3 +1223,12 @@
   background: var(--bg-light);
   /* keep light background for disorders page content */
 }
+
+/* ============================================
+   FOOTER
+   No custom footer CSS needed here — the Footer
+   component now reuses Home's exact "home-footer-*"
+   classes (imported via ./Home.css), so it renders
+   with identical colors, spacing, and structure to
+   the Home page footer automatically.
+   ============================================ */

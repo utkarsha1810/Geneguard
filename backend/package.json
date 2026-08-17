@@ -6,7 +6,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "seed": "node scripts/seedData.js"
   },
   "keywords": [
     "gene-guard",
@@ -18,10 +19,12 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.24.0",
     "@google/generative-ai": "^0.24.1",
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.3",
     "mongoose": "^7.8.9"
   }
 }

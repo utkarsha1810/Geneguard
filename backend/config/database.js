@@ -5,18 +5,31 @@ const log = (msg, level = 'info') => {
   console.log(`[${timestamp}] [${level.toUpperCase()}] ${msg}`);
 };
 
+// Add connection lifecycle event listeners
+mongoose.connection.on('connected', () => {
+  log('✓ [Mongoose Event] Connected to MongoDB database', 'info');
+});
+
+mongoose.connection.on('error', (err) => {
+  log(`✗ [Mongoose Event] Connection error: ${err.message}`, 'error');
+});
+
+mongoose.connection.on('disconnected', () => {
+  log('⚠️ [Mongoose Event] Disconnected from MongoDB database', 'warn');
+});
+
 export const connectDatabase = async () => {
   try {
     const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/gene-guard';
 
-    log('Connecting to MongoDB...');
+    log(`Connecting to MongoDB at: ${mongoURI}...`, 'info');
 
     await mongoose.connect(mongoURI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
 
-    log('✓ MongoDB connected successfully to gene-guard database', 'info');
+    log('✓ MongoDB connection established successfully', 'info');
 
     return mongoose.connection;
   } catch (error) {
@@ -36,3 +49,4 @@ export const disconnectDatabase = async () => {
 };
 
 export default mongoose;
+

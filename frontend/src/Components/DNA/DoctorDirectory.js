@@ -7,16 +7,16 @@ import './DoctorDirectory.css';
 const verifiedIndianDoctors = [
   {
     id: 'doc_in_1',
-    name: 'Dr. Anita Sengupta',
-    qualification: 'MD (Medical Genetics), DM, FRCP',
-    specialty: 'Clinical Geneticist & Hereditary Oncology',
+    name: 'Dr. Rajesh Sharma',
+    qualification: 'MD, DM (Medical Genetics)',
+    specialty: 'Clinical Geneticist',
     location: 'Mumbai, Maharashtra',
-    registrationNumber: 'MCI-34892-GEN',
-    experience: '16+ years',
-    hospital: 'Tata Memorial Centre / Apollo Genomics',
+    pincode: '400012',
+    registrationNumber: 'MCI-10001',
+    experience: '15+ years',
+    hospital: 'KEM Hospital, Parel',
     languages: ['English', 'Hindi', 'Marathi'],
     rating: 4.9,
-    reviewsCount: 124,
     status: 'Available',
     fee: '₹1,500',
     avatar: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=200&h=200&fit=crop',
@@ -24,16 +24,16 @@ const verifiedIndianDoctors = [
   },
   {
     id: 'doc_in_2',
-    name: 'Dr. Rameshwar V. Joshi',
-    qualification: 'MBBS, DNB (Pediatrics), MSc (Human Genetics)',
-    specialty: 'Prenatal & Pediatric Genetic Counselor',
-    location: 'Bengaluru, Karnataka',
-    registrationNumber: 'KMC-58219',
-    experience: '12+ years',
-    hospital: 'Manipal Hospital & Center for Human Genetics',
-    languages: ['English', 'Kannada', 'Hindi'],
+    name: 'Dr. Priya Nair',
+    qualification: 'MBBS, MSc (Genetic Counseling)',
+    specialty: 'Genetic Counselor',
+    location: 'Mumbai, Maharashtra',
+    pincode: '400012',
+    registrationNumber: 'MCI-10002',
+    experience: '10+ years',
+    hospital: 'Tata Memorial Hospital, Parel',
+    languages: ['English', 'Hindi', 'Marathi'],
     rating: 4.8,
-    reviewsCount: 98,
     status: 'Available',
     fee: '₹1,200',
     avatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=200&h=200&fit=crop',
@@ -41,77 +41,28 @@ const verifiedIndianDoctors = [
   },
   {
     id: 'doc_in_3',
-    name: 'Dr. Priya Sundaram',
-    qualification: 'PhD (Genetic Epidemiology), Board Certified Counselor',
-    specialty: 'Cardiovascular & Metabolic Genetics',
-    location: 'Chennai, Tamil Nadu',
-    registrationNumber: 'TNM-89104',
-    experience: '14+ years',
-    hospital: 'Madras Medical Mission Genomics Clinic',
-    languages: ['English', 'Tamil', 'Telugu'],
-    rating: 4.95,
-    reviewsCount: 156,
-    status: 'In Consultation',
-    fee: '₹1,400',
-    avatar: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=200&h=200&fit=crop',
-    country: 'India',
-  },
-  {
-    id: 'doc_in_4',
-    name: 'Dr. Harpreet Singh Chadha',
-    qualification: 'MD (Biochemistry & Molecular Genetics)',
-    specialty: 'Rare Inherited Disorders & Carrier Screening',
-    location: 'New Delhi, Delhi',
-    registrationNumber: 'DMC-24901',
-    experience: '18+ years',
-    hospital: 'AIIMS / Sir Ganga Ram Hospital',
-    languages: ['English', 'Hindi', 'Punjabi'],
-    rating: 4.88,
-    reviewsCount: 142,
+    name: 'Dr. Ananya Deshmukh',
+    qualification: 'MD (Pediatrics), DM (Genetics)',
+    specialty: 'Prenatal Genetics',
+    location: 'Mumbai, Maharashtra',
+    pincode: '400053',
+    registrationNumber: 'MCI-10003',
+    experience: '12+ years',
+    hospital: 'Kokilaben Dhirubhai Ambani Hospital, Andheri West',
+    languages: ['English', 'Hindi', 'Marathi'],
+    rating: 4.9,
     status: 'Available',
     fee: '₹1,800',
-    avatar: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=200&h=200&fit=crop',
-    country: 'India',
-  },
-  {
-    id: 'doc_in_5',
-    name: 'Dr. Sunita Kulkarni',
-    qualification: 'MS, Certified Genetic Counselor (BGCI)',
-    specialty: 'Reproductive Genetics & IVF Counseling',
-    location: 'Pune, Maharashtra',
-    registrationNumber: 'MMC-76541',
-    experience: '10+ years',
-    hospital: 'Sahyadri Specialty Hospital',
-    languages: ['English', 'Marathi', 'Hindi'],
-    rating: 4.79,
-    reviewsCount: 88,
-    status: 'Available',
-    fee: '₹1,100',
-    avatar: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=200&h=200&fit=crop',
-    country: 'India',
-  },
-  {
-    id: 'doc_in_6',
-    name: 'Dr. Arvind Nambiar',
-    qualification: 'MD, DM (Medical Genetics)',
-    specialty: 'Neurogenetics & Neuromuscular Disorders',
-    location: 'Hyderabad, Telangana',
-    registrationNumber: 'TSMC-61402',
-    experience: '15+ years',
-    hospital: 'NIMS / Yashoda Hospitals',
-    languages: ['English', 'Telugu', 'Malayalam'],
-    rating: 4.92,
-    reviewsCount: 110,
-    status: 'In Consultation',
-    fee: '₹1,600',
-    avatar: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=200&h=200&fit=crop',
+    avatar: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=200&h=200&fit=crop',
     country: 'India',
   },
 ];
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5050/api';
+
 const DoctorDirectory = ({
-  onStartConsultation, // (doctor, mode) => void
-  onBookAppointment,   // (doctor) => void
+  onStartConsultation,
+  onBookAppointment,
   patientProfile = {},
 }) => {
   const [doctors, setDoctors] = useState(verifiedIndianDoctors);
@@ -122,58 +73,147 @@ const DoctorDirectory = ({
   const [selectedRegion, setSelectedRegion] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
 
-  // Fetch from NPI Registry as USA fallback / complement
+  // Pincode & Location State
+  const [userPincode, setUserPincode] = useState('400001');
+  const [pincodeDistrict, setPincodeDistrict] = useState('Mumbai');
+  const [pincodeState, setPincodeState] = useState('Maharashtra');
+  const [locationStatus, setLocationStatus] = useState('Detecting your location…');
+  const [isEditingPincode, setIsEditingPincode] = useState(false);
+  const [pincodeInput, setPincodeInput] = useState('');
+  const [pincodeError, setPincodeError] = useState('');
+
+  // ── 1. HELPER: FETCH PINCODE DETAILS FROM POSTAL PINCODE API ───────────────
+  const fetchPincodeDetails = async (pin) => {
+    try {
+      const res = await axios.get(`https://api.postalpincode.in/pincode/${pin}`, { timeout: 4000 });
+      if (res.data && res.data[0] && res.data[0].Status === 'Success' && res.data[0].PostOffice?.length > 0) {
+        const po = res.data[0].PostOffice[0];
+        setPincodeDistrict(po.District || po.Block || 'Mumbai');
+        setPincodeState(po.State || 'Maharashtra');
+        return { district: po.District || 'Mumbai', state: po.State || 'Maharashtra' };
+      }
+    } catch (err) {
+      console.warn('Postal pincode API fetch note:', err.message);
+    }
+    setPincodeDistrict('Mumbai');
+    setPincodeState('Maharashtra');
+    return { district: 'Mumbai', state: 'Maharashtra' };
+  };
+
+  // ── 2. DYNAMIC LOCATION & PINCODE DETECTION ────────────────────────────────
   useEffect(() => {
-    const fetchNpiDoctors = async () => {
+    let isMounted = true;
+
+    const detectLocationAndPincode = async () => {
+      setLocationStatus('Detecting your location…');
+
+      // Check 1: Patient profile location in localStorage
       try {
-        setIsLoading(true);
-        // NPI Registry USA Genetic Counseling Taxonomy query
-        const npiUrl = 'https://npiregistry.cms.hhs.gov/api/?taxonomy_description=Genetic+Counseling&version=2.1&limit=10';
-        const response = await axios.get(npiUrl, { timeout: 6000 });
+        const storedProfile = JSON.parse(localStorage.getItem('geneGuardPatientProfile') || '{}');
+        const intakeLoc = patientProfile.location || storedProfile.location;
+        if (intakeLoc && /\d{6}/.test(intakeLoc)) {
+          const match = intakeLoc.match(/\d{6}/);
+          if (match && isMounted) {
+            const detectedPin = match[0];
+            setUserPincode(detectedPin);
+            await fetchPincodeDetails(detectedPin);
+            setLocationStatus('Patient Intake Profile');
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('Patient intake pincode check note:', e.message);
+      }
 
-        if (response.data && response.data.results && response.data.results.length > 0) {
-          const npiParsed = response.data.results.map((item, idx) => {
-            const basic = item.basic || {};
-            const address = (item.addresses && item.addresses[0]) || {};
-            const taxonomy = (item.taxonomies && item.taxonomies[0]) || {};
-
-            const firstName = basic.first_name || 'Counselor';
-            const lastName = basic.last_name || `#${item.number}`;
-            const city = address.city || 'National';
-            const state = address.state || 'USA';
-
-            return {
-              id: `npi_${item.number}`,
-              name: `Dr. ${firstName} ${lastName}`,
-              qualification: basic.credential || 'MS, CGC (Board Certified)',
-              specialty: taxonomy.desc || 'Certified Genetic Counselor',
-              location: `${city}, ${state} (USA)`,
-              registrationNumber: `NPI-${item.number}`,
-              experience: `${10 + (idx % 12)} years`,
-              hospital: basic.organization_name || 'Genomic Medicine Associates',
-              languages: ['English'],
-              rating: 4.8 + (idx % 3) * 0.05,
-              reviewsCount: 45 + idx * 8,
-              status: idx % 3 === 0 ? 'In Consultation' : 'Available',
-              fee: '$60 / session',
-              avatar: `https://images.unsplash.com/photo-${1559839734 + idx * 1000}?w=200&h=200&fit=crop`,
-              country: 'USA',
-            };
+      // Check 2: Browser Geolocation API + Nominatim Reverse Geocoding
+      if ('geolocation' in navigator) {
+        try {
+          const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 4000 });
           });
 
-          // Combine: prioritize verified Indian network, attach NPI entries
-          setDoctors([...verifiedIndianDoctors, ...npiParsed]);
-          setApiSource('Open Healthcare Network + NPI USA Registry');
+          const { latitude, longitude } = position.coords;
+          let detectedPin = '400001';
+
+          try {
+            const nomRes = await axios.get(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
+              { timeout: 3000 }
+            );
+            if (nomRes.data?.address?.postcode && /^\d{6}$/.test(nomRes.data.address.postcode)) {
+              detectedPin = nomRes.data.address.postcode;
+            }
+          } catch (nomErr) {
+            console.warn('Nominatim reverse geocode note:', nomErr.message);
+          }
+
+          if (isMounted) {
+            setUserPincode(detectedPin);
+            await fetchPincodeDetails(detectedPin);
+            setLocationStatus('Browser Geolocation');
+            return;
+          }
+        } catch (geoErr) {
+          console.log('Geolocation denied/unavailable, defaulting to Mumbai 400001:', geoErr.message);
+        }
+      }
+
+      // Check 3: Default fallback (Mumbai 400001)
+      if (isMounted) {
+        setUserPincode('400001');
+        await fetchPincodeDetails('400001');
+        setLocationStatus('Default Location (Mumbai)');
+      }
+    };
+
+    detectLocationAndPincode();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [patientProfile.location]);
+
+  // ── 3. SYNC DOCTORS TO MONGO DB & FETCH ───────────────────────────────────
+  useEffect(() => {
+    const syncAndFetchDoctors = async () => {
+      try {
+        setIsLoading(true);
+
+        // Fetch supplementary doctors from MongoDB
+        const mongoRes = await axios.get(`${API_BASE_URL}/doctors`);
+        if (mongoRes.data?.doctors && mongoRes.data.doctors.length > 0) {
+          const mappedMongoDocs = mongoRes.data.doctors.map((doc) => ({
+            id: doc._id || doc.registrationNumber,
+            _id: doc._id,
+            name: doc.name,
+            qualification: doc.qualification || 'MD (Medical Genetics)',
+            specialty: doc.specialty || 'Medical Geneticist',
+            location: doc.location || 'Mumbai, Maharashtra',
+            pincode: doc.pincode || '400001',
+            registrationNumber: doc.registrationNumber || 'REG-100',
+            experience: doc.experience || '5+ years',
+            hospital: doc.hospital || 'Specialty Genomics Hospital',
+            languages: doc.languages || ['English', 'Hindi', 'Marathi'],
+            rating: doc.rating || 4.8,
+            status: doc.status === 'approved' ? 'Available' : doc.status === 'pending' ? 'In Consultation' : 'Unavailable',
+            rawStatus: doc.status,
+            fee: doc.consultationFee || '₹1,500',
+            avatar: doc.avatar || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=200&h=200&fit=crop',
+            country: 'India',
+            source: doc.source || 'manual',
+          }));
+
+          setDoctors(mappedMongoDocs);
+          setApiSource('GeneGuard Verified MongoDB Network');
         }
       } catch (err) {
-        console.warn('NPI Registry fetch fallback to verified directory:', err.message);
-        // Defaults to verified Indian Doctors seamlessly
+        console.warn('Doctor Directory loading note:', err.message);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchNpiDoctors();
+    syncAndFetchDoctors();
   }, []);
 
   const specialties = useMemo(() => {
@@ -188,55 +228,88 @@ const DoctorDirectory = ({
       } else if (d.specialty.toLowerCase().includes('neuro')) {
         set.add('Neurogenetics');
       } else {
-        set.add('General Genetic Counseling');
+        set.add('Clinical Geneticist');
       }
     });
     return Array.from(set);
   }, [doctors]);
 
+  // ── 4. PINCODE-BASED FILTERING & RANKING ───────────────────────────────────
   const filteredDoctors = useMemo(() => {
-    return doctors.filter((doc) => {
+    // Basic filter pass
+    let list = doctors.filter((doc) => {
+      if (doc.rawStatus === 'rejected') return false;
+
       const matchSearch =
         doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         doc.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
         doc.specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        doc.hospital.toLowerCase().includes(searchTerm.toLowerCase());
+        doc.hospital.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (doc.pincode && doc.pincode.includes(searchTerm));
 
       const matchSpecialty =
         selectedSpecialty === 'All' ||
         doc.specialty.toLowerCase().includes(selectedSpecialty.toLowerCase().split(' ')[0]);
 
-      const matchRegion =
-        selectedRegion === 'All' ||
-        (selectedRegion === 'India' && doc.country === 'India') ||
-        (selectedRegion === 'USA / Global' && doc.country === 'USA');
-
       const matchStatus =
         statusFilter === 'All' || doc.status.toLowerCase() === statusFilter.toLowerCase();
 
-      return matchSearch && matchSpecialty && matchRegion && matchStatus;
+      return matchSearch && matchSpecialty && matchStatus;
     });
-  }, [doctors, searchTerm, selectedSpecialty, selectedRegion, statusFilter]);
 
-  const toggleDoctorStatus = (docId) => {
-    setDoctors((prev) =>
-      prev.map((d) =>
-        d.id === docId
-          ? { ...d, status: d.status === 'Available' ? 'In Consultation' : 'Available' }
-          : d
-      )
-    );
+    // Pincode Ranking Logic:
+    // Sort exact pincode match first -> Same district/city second -> Others third
+    list.sort((a, b) => {
+      const aPinMatch = a.pincode === userPincode;
+      const bPinMatch = b.pincode === userPincode;
+
+      if (aPinMatch && !bPinMatch) return -1;
+      if (!aPinMatch && bPinMatch) return 1;
+
+      const districtLower = pincodeDistrict.toLowerCase();
+      const aDistMatch = (a.location && a.location.toLowerCase().includes(districtLower)) || (a.hospital && a.hospital.toLowerCase().includes(districtLower));
+      const bDistMatch = (b.location && b.location.toLowerCase().includes(districtLower)) || (b.hospital && b.hospital.toLowerCase().includes(districtLower));
+
+      if (aDistMatch && !bDistMatch) return -1;
+      if (!aDistMatch && bDistMatch) return 1;
+
+      return 0;
+    });
+
+    return list;
+  }, [doctors, searchTerm, selectedSpecialty, statusFilter, userPincode, pincodeDistrict]);
+
+  // ── 5. MANUAL PINCODE OVERRIDE HANDLER ────────────────────────────────────
+  const handleApplyCustomPincode = async () => {
+    setPincodeError('');
+    const cleanPin = pincodeInput.trim();
+
+    if (!/^\d{6}$/.test(cleanPin)) {
+      setPincodeError('Pincode must be exactly 6 digits (e.g. 400012)');
+      return;
+    }
+
+    setUserPincode(cleanPin);
+    setLocationStatus('User Specified');
+    setIsEditingPincode(false);
+    await fetchPincodeDetails(cleanPin);
+  };
+
+  const handleClearLocation = () => {
+    setPincodeInput('');
+    setPincodeError('');
+    setIsEditingPincode(true);
   };
 
   return (
     <div className="doctor-directory-wrapper">
-      {/* ─── Directory Header ─── */}
+      {/* ─── Header ─── */}
       <div className="directory-header">
         <div>
           <span className="directory-badge">Verified Genomics Network</span>
           <h2>Connect with Certified Genetic Specialists</h2>
           <p>
-            Real-time directory powered by {apiSource}. Video, voice, or instant chat with direct medical file integration.
+            Real-time directory powered by {apiSource}. Instant chat, audio, or HD video consultation with direct medical record integration.
           </p>
         </div>
         <div className="directory-stats-chip">
@@ -245,13 +318,60 @@ const DoctorDirectory = ({
         </div>
       </div>
 
-      {/* ─── Search & Filters Bar ─── */}
+      {/* ─── Pincode Location Filter Banner (PART 3) ─── */}
+      <div className="user-location-banner">
+        <div className="location-badge-pill">
+          <MapPin size={18} />
+          <span>
+            Showing doctors near pincode <strong>{userPincode}</strong> ({pincodeDistrict}, {pincodeState})
+          </span>
+          <span className="location-source-tag">[{locationStatus}]</span>
+        </div>
+
+        {isEditingPincode ? (
+          <div className="location-override-box">
+            <input
+              type="text"
+              className={`location-override-input ${pincodeError ? 'input-err' : ''}`}
+              placeholder="Enter 6-digit Pincode (e.g. 400050)..."
+              value={pincodeInput}
+              onChange={(e) => {
+                setPincodeInput(e.target.value);
+                if (pincodeError) setPincodeError('');
+              }}
+              onKeyDown={(e) => e.key === 'Enter' && handleApplyCustomPincode()}
+              maxLength={6}
+              autoFocus
+            />
+            <button className="location-save-btn" onClick={handleApplyCustomPincode}>
+              Apply Pincode
+            </button>
+            <button
+              className="location-cancel-btn"
+              onClick={() => {
+                setIsEditingPincode(false);
+                setPincodeError('');
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button className="location-change-btn" onClick={handleClearLocation}>
+            Change Pincode
+          </button>
+        )}
+
+        {pincodeError && <div className="pincode-error-msg">{pincodeError}</div>}
+      </div>
+
+      {/* ─── Controls Bar (Search + Filters) ─── */}
       <div className="directory-controls-bar">
         <div className="directory-search-input-wrap">
           <Search size={18} className="search-icon" />
           <input
             type="text"
-            placeholder="Search by doctor name, city, specialty, hospital..."
+            placeholder="Search by doctor name, pincode (400012), specialty, hospital..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -267,18 +387,6 @@ const DoctorDirectory = ({
               {specialties.map((s) => (
                 <option key={s} value={s}>{s}</option>
               ))}
-            </select>
-          </div>
-
-          <div className="filter-group">
-            <MapPin size={15} />
-            <select
-              value={selectedRegion}
-              onChange={(e) => setSelectedRegion(e.target.value)}
-            >
-              <option value="All">All Regions</option>
-              <option value="India">India (OHN Network)</option>
-              <option value="USA / Global">USA (NPI Registry)</option>
             </select>
           </div>
 
@@ -304,25 +412,34 @@ const DoctorDirectory = ({
         </div>
       ) : filteredDoctors.length === 0 ? (
         <div className="directory-empty">
-          <p>No specialists found matching your search filters.</p>
+          <p>No doctors found near pincode <strong>{userPincode}</strong> ({pincodeDistrict}).</p>
           <button
             className="directory-reset-btn"
             onClick={() => {
               setSearchTerm('');
               setSelectedSpecialty('All');
-              setSelectedRegion('All');
               setStatusFilter('All');
+              setUserPincode('400001');
+              setPincodeDistrict('Mumbai');
             }}
           >
-            Clear all filters
+            Reset Pincode & Filters
           </button>
         </div>
       ) : (
         <div className="doctors-grid">
           {filteredDoctors.map((doctor) => {
             const isOnline = doctor.status === 'Available';
+            const isExactPincode = doctor.pincode === userPincode;
             return (
               <div key={doctor.id} className={`doctor-card ${isOnline ? 'is-available' : 'is-busy'}`}>
+                {/* Pincode Tag Badge */}
+                {isExactPincode && (
+                  <div className="exact-pincode-badge">
+                    ⚡ Exact Pincode Match ({doctor.pincode})
+                  </div>
+                )}
+
                 {/* Doctor Card Top */}
                 <div className="doctor-card-top">
                   <div className="doctor-avatar-wrap">
@@ -339,13 +456,9 @@ const DoctorDirectory = ({
                   <div className="doctor-info-head">
                     <div className="doctor-name-row">
                       <h3>{doctor.name}</h3>
-                      <button
-                        className={`status-toggle-pill ${isOnline ? 'available' : 'busy'}`}
-                        title="Click to toggle availability in UI demo"
-                        onClick={() => toggleDoctorStatus(doctor.id)}
-                      >
+                      <span className={`status-toggle-pill ${isOnline ? 'available' : 'busy'}`}>
                         {doctor.status}
-                      </button>
+                      </span>
                     </div>
                     <span className="doctor-qualification">{doctor.qualification}</span>
                     <span className="doctor-specialty">{doctor.specialty}</span>
@@ -356,7 +469,7 @@ const DoctorDirectory = ({
                 <div className="doctor-meta-grid">
                   <div className="meta-item meta-location">
                     <MapPin size={14} />
-                    <span>{doctor.location}</span>
+                    <span>{doctor.location} {doctor.pincode ? `(${doctor.pincode})` : ''}</span>
                   </div>
                   <div className="meta-item meta-exp">
                     <Clock size={14} />
@@ -382,7 +495,7 @@ const DoctorDirectory = ({
                   <div className="doctor-fee">{doctor.fee}</div>
                 </div>
 
-                {/* Direct Action Buttons (Inside GeneGuard) */}
+                {/* Direct Action Buttons */}
                 <div className="doctor-actions-row">
                   <button
                     className="action-btn chat-btn"

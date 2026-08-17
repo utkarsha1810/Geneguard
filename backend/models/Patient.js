@@ -74,6 +74,15 @@ const PatientSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    isHighRisk: {
+      type: Boolean,
+      default: false,
+    },
+    riskLevel: {
+      type: String,
+      enum: ['low', 'medium', 'high'],
+      default: 'low',
+    },
   },
   { timestamps: true }
 );
