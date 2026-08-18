@@ -120,32 +120,19 @@ const generateClinicalSummaryFallback = (rawText, fileName) => {
 };
 
 // Gemini Text: send raw extracted text from PDF/DOCX to Gemini for physician-level clinical summary
-// Fast 3.5s timeout per key so fallback is instant if API keys are offline
 const summarizeTextWithGemini = async (rawText, fileName) => {
   if (!rawText || rawText.trim().length < 5) {
     return generateClinicalSummaryFallback(rawText || '', fileName);
   }
 
-  if (ALL_GEMINI_KEYS.length === 0) {
+  // Deduplicate keys to prevent infinite loops on duplicate env keys
+  const uniqueKeys = Array.from(new Set(ALL_GEMINI_KEYS)).filter(Boolean);
+
+  if (uniqueKeys.length === 0) {
     return generateClinicalSummaryFallback(rawText, fileName);
   }
 
-  const triedKeys = new Set();
-  const TIMEOUT_MS = 3500; // 3.5 seconds max per key
-
-  while (triedKeys.size < ALL_GEMINI_KEYS.length) {
-    const apiKey = getGeminiApiKey();
-    if (!apiKey || triedKeys.has(apiKey)) {
-      rotateToNextKey();
-      continue;
-    }
-    triedKeys.add(apiKey);
-
-    try {
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
-      const prompt = `You are a senior clinical physician reviewing a patient's medical document. The following is raw text extracted from a medical report. Do NOT repeat the raw text. Instead, write a clean, structured clinical summary a doctor would write after reading this document. Use these sections where relevant:
+  const prompt = `You are a senior clinical physician reviewing a patient's medical document. The following is raw text extracted from a medical report. Do NOT repeat the raw text. Instead, write a clean, structured clinical summary a doctor would write after reading this document. Use these sections where relevant:
 - Patient Details (name, age, gender, ID if present)
 - Type of Report (e.g. Histopathology, MRI, Blood Test)
 - Key Findings (bullet points, clear and concise)
@@ -158,9 +145,14 @@ Write in professional medical language. Be concise. Do not copy sentences from t
 ${rawText.substring(0, 15000)}
 --- END ---`;
 
+  for (const apiKey of uniqueKeys) {
+    try {
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
       const apiCall = model.generateContent(prompt);
       const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Gemini API timeout')), TIMEOUT_MS)
+        setTimeout(() => reject(new Error('Gemini API timeout')), 3000)
       );
 
       const result = await Promise.race([apiCall, timeout]);
@@ -171,12 +163,11 @@ ${rawText.substring(0, 15000)}
         return summary;
       }
     } catch (apiError) {
-      console.warn(`[GeneGuard] ⚠️ Key attempt failed: ${apiError.message?.substring(0, 60)}`);
-      rotateToNextKey();
+      console.warn(`[GeneGuard] ⚠️ Key attempt failed (${apiError.message?.substring(0, 60)})`);
     }
   }
 
-  console.log('[GeneGuard] ⚡ Fast fallback engine generating structured clinical summary...');
+  console.log('[GeneGuard] ⚡ Gemini API offline/expired. Using structured clinical summary engine.');
   return generateClinicalSummaryFallback(rawText, fileName);
 };
 
