@@ -58,11 +58,7 @@ const app = express();
 
 app.use(helmet());
 app.use(cors({
-  origin: [
-    process.env.FRONTEND_URL,          // Vercel production URL (e.g. https://gene-guard.vercel.app)
-    'http://localhost:3000',            // local React dev server
-    'http://localhost:3001',
-  ].filter(Boolean),
+  origin: true,
   credentials: true,
 }));
 app.use(express.json({ limit: '50mb' }));
