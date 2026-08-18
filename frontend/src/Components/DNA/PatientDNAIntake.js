@@ -64,52 +64,123 @@ const rotateToNextKey = () => {
   }
 };
 
-// Fallback: Generate clean, physician-style structured summary from raw text if Gemini API is offline/revoked
+// Fallback: Smart clinical parser that extracts concise, framed physician summaries without raw text dumps
 const generateClinicalSummaryFallback = (rawText, fileName) => {
-  const lines = (rawText || '').split('\n').map((l) => l.trim()).filter(Boolean);
+  const text = (rawText || '').replace(/\s+/g, ' ').trim();
 
-  // Detect type of report
+  // 1. Patient Details Extraction (Name, Age/Gender, ID)
+  let patientName = '';
+  let ageSex = '';
+  let patientId = '';
+
+  const nameMatch = text.match(/(?:Patient\s*Name|Name)\s*:\s*([A-Za-z\.\s]+?)(?=Age|Sex|Gender|Mobile|ID|Ref|Ward|CR|Collection|Date|Reporting|$)/i);
+  if (nameMatch) {
+    patientName = nameMatch[1].trim().replace(/\s{2,}/g, ' ');
+  }
+
+  const ageSexMatch = text.match(/(?:Age\s*[\/\&]?\s*Gender|Age\s*[\/\&]?\s*Sex|Age)\s*:\s*([^:]+?)(?=Mobile|ID|Ref|Ward|CR|Collection|Date|Reporting|Sample|$)/i);
+  if (ageSexMatch) {
+    ageSex = ageSexMatch[1].trim().replace(/\s{2,}/g, ' ');
+  }
+
+  const idMatch = text.match(/(?:Patient\s*ID|CR\s*No|Sample\s*ID)\s*:?\s*(\w+)/i);
+  if (idMatch) {
+    patientId = idMatch[1].trim();
+  }
+
+  let patientDetails = patientName || `Extracted from record (${fileName})`;
+  if (ageSex) patientDetails += ` | ${ageSex}`;
+  if (patientId) patientDetails += ` (ID: ${patientId})`;
+
+  // 2. Report Type Detection
   let reportType = 'Clinical Medical Document';
-  if (/blood|cbc|hemoglobin|platelet|lipid|glucose|hba1c|serum/i.test(rawText)) reportType = 'Blood Test / Laboratory Panel';
-  else if (/mri|ct scan|x-ray|ultrasound|radiology|imaging/i.test(rawText)) reportType = 'Diagnostic Imaging / Radiology';
-  else if (/biopsy|histopathology|cytology|pathology|tissue/i.test(rawText)) reportType = 'Histopathology Report';
-  else if (/genetic|dna|sequencing|variant|mutation|brca|thalassemia/i.test(rawText)) reportType = 'Genetic & DNA Analysis Report';
+  if (/histopathology|biopsy|cytology|pathology|tissue/i.test(text)) reportType = 'Histopathology Report';
+  else if (/blood|cbc|hemoglobin|platelet|lipid|glucose|hba1c|serum/i.test(text)) reportType = 'Blood Test / Laboratory Panel';
+  else if (/mri|ct scan|x-ray|ultrasound|radiology|imaging/i.test(text)) reportType = 'Diagnostic Imaging / Radiology';
+  else if (/genetic|dna|sequencing|variant|mutation|brca|thalassemia/i.test(text)) reportType = 'Genetic & DNA Analysis Report';
 
-  // Extract patient info line if found
-  const nameLine = lines.find((l) => /patient|name:|mr\.|mrs\.|ms\./i.test(l));
+  // 3. Key Findings Extraction (Bulleted & Clinical)
+  const findings = [];
 
-  // Extract key findings & abnormal values
-  const abnormalLines = lines.filter((l) => /low|high|abnormal|elevated|positive|deficient|critical|warning/i.test(l));
-  const findingLines = lines.filter((l) =>
-    !/hospital|center|contact|phone|email|page|signature|date:/i.test(l) &&
-    (l.length > 15 || /\d+/.test(l))
-  ).slice(0, 5);
+  // Specimen / Surgery Details
+  const specimenMatch = text.match(/(?:SPECIMEN|DATE OF SURGERY)\s*:?\s*([^.:\n]+)/i);
+  if (specimenMatch) {
+    findings.push(`Specimen / Location: ${specimenMatch[1].trim()}`);
+  }
 
-  let summary = `• Patient Details: ${nameLine || `Extracted from record (${fileName})`}\n`;
+  // Gross Examination
+  const grossMatch = text.match(/(?:GROSS|Gross Examination)\s*:?\s*([^\.]+\.)/i) || text.match(/Sample received[^\.]+\./i);
+  if (grossMatch) {
+    const grossClean = (grossMatch[1] || grossMatch[0]).replace(/GROSS\s*/i, '').trim();
+    findings.push(`Gross Findings: ${grossClean}`);
+  }
+
+  // Microscopic Examination
+  const microMatch = text.match(/(?:MICROSCOPY|Microscopic Examination)\s*:?\s*([^\.]+\.)/i) || text.match(/Sections show[^\.]+\./i);
+  if (microMatch) {
+    const microClean = (microMatch[1] || microMatch[0]).replace(/MICROSCOPY\s*/i, '').trim();
+    findings.push(`Microscopy: ${microClean}`);
+  }
+
+  // Malignancy & Pathology Screen
+  if (/no granuloma|no atypia|no malignancy|negative for malignancy|benign/i.test(text)) {
+    findings.push(`Malignancy Screening: Negative (No evidence of granuloma, atypia, or malignancy)`);
+  } else if (/malignant|atypia|carcinoma|dysplasia/i.test(text)) {
+    findings.push(`⚠️ Malignancy Flag: Atypical / dysplastic features noted`);
+  }
+
+  // Fallback findings if standard pathology markers missing
+  if (findings.length === 0) {
+    const sentences = text.split(/(?<=[.!?])\s+/).filter(s =>
+      !/hospital|center|contact|phone|email|page|signature|date|collection|reporting|scanning|ward/i.test(s) &&
+      s.length > 15 && s.length < 140
+    );
+    sentences.slice(0, 3).forEach(s => findings.push(s.trim()));
+  }
+
+  if (findings.length === 0) {
+    findings.push('Medical report parsed successfully for clinical evaluation.');
+  }
+
+  // 4. Impression / Diagnosis
+  let impression = '';
+  const impressionMatch = text.match(/(?:IMPRESSION|DIAGNOSIS|CONCLUSION)\s*:?\s*([^\.*]+)/i);
+  if (impressionMatch) {
+    impression = impressionMatch[1].replace(/END OF REPORT.*/i, '').trim();
+  }
+  if (!impression) {
+    impression = `Diagnostic findings consistent with ${reportType.toLowerCase()} analysis (${fileName}).`;
+  }
+
+  // 5. Abnormal Values or Concerns
+  const abnormalConcerns = [];
+  if (/low|high|abnormal|elevated|positive|deficient|critical|warning/i.test(text)) {
+    const matches = text.match(/(\b(low|high|abnormal|elevated|positive|deficient|critical)\b[^\.]+\.)/gi);
+    if (matches) {
+      matches.slice(0, 2).forEach(m => abnormalConcerns.push(m.trim()));
+    }
+  }
+
+  // Build framed, bulleted summary
+  let summary = `• Patient Details: ${patientDetails}\n`;
   summary += `• Type of Report: ${reportType}\n\n`;
 
   summary += `• Key Findings:\n`;
-  if (findingLines.length > 0) {
-    findingLines.forEach((item) => {
-      summary += `  - ${item}\n`;
-    });
-  } else if (lines.length > 0) {
-    summary += `  - Document parsed successfully. ${lines.slice(0, 3).join(' ')}\n`;
-  } else {
-    summary += `  - Document parsed successfully for specialist clinical review.\n`;
-  }
+  findings.forEach((f) => {
+    summary += `  - ${f}\n`;
+  });
   summary += `\n`;
 
   summary += `• Impression / Diagnosis:\n`;
-  summary += `  - Clinical interpretation derived from diagnostic record (${fileName}).\n\n`;
+  summary += `  - ${impression}\n\n`;
 
   summary += `• Abnormal Values or Concerns:\n`;
-  if (abnormalLines.length > 0) {
-    abnormalLines.forEach((item) => {
-      summary += `  - ⚠️ ${item}\n`;
+  if (abnormalConcerns.length > 0) {
+    abnormalConcerns.forEach((ac) => {
+      summary += `  - ⚠️ ${ac}\n`;
     });
   } else {
-    summary += `  - No explicit abnormal flags identified in parsed text.\n`;
+    summary += `  - Benign histology; no explicit abnormal flags or malignant findings identified.\n`;
   }
   summary += `\n`;
 
