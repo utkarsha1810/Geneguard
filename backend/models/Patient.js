@@ -64,6 +64,18 @@ const PatientSchema = new mongoose.Schema(
       trim: true,
     },
 
+    // Medical History Files & Extracted Text
+    medicalHistoryFiles: [
+      {
+        fileName: { type: String, required: true },
+        fileType: { type: String },
+        extractedText: { type: String },
+        extractedSummary: { type: String },
+        isAiVision: { type: Boolean, default: false },
+        uploadedAt: { type: Date, default: Date.now },
+      },
+    ],
+
     // Account Status
     consultedDoctor: {
       type: String,

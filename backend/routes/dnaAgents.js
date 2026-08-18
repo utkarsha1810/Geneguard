@@ -91,6 +91,7 @@ router.post('/run/:agentId', async (req, res) => {
         emergencyContact: mergedPatient.emergencyContact,
         location: mergedPatient.location,
         consultedDoctor: mergedPatient.consultedDoctor,
+        medicalHistoryFiles: mergedPatient.medicalHistoryFiles || mergedPatient.uploadedRecords || [],
       });
 
       logger(`Patient record saved: ${patientRecord._id}`);

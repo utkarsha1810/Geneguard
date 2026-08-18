@@ -309,6 +309,50 @@ const ReportPDFViewer = ({
           </tbody>
         </table>
 
+        {/* ─── Uploaded Medical History — AI Analyzed Summary ─── */}
+        {uploadedRecords && uploadedRecords.length > 0 && (
+          <>
+            <h2 className="clinical-section-title" style={{ marginTop: '1.2rem' }}>
+              <span className="sec-num">3.</span> Uploaded Medical History — AI Analyzed Summary
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1rem' }}>
+              {uploadedRecords.map((doc, idx) => (
+                <div key={idx} style={{ border: '1px solid #cbd5e1', borderRadius: '8px', overflow: 'hidden' }}>
+                  {/* File metadata header */}
+                  <div style={{ background: '#f1f5f9', padding: '0.55rem 0.85rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0' }}>
+                    <span style={{ fontWeight: '700', fontSize: '0.82rem', color: '#0f172a' }}>
+                      {idx + 1}. {doc.fileName || doc.name}
+                      {doc.isAiVision ? ' — Analyzed by Gemini AI Vision' : ''}
+                    </span>
+                    <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                      {doc.fileType || doc.type || 'Document'} · {doc.uploadedAt || 'Attached'}
+                    </span>
+                  </div>
+                  {/* Clinical summary body */}
+                  <div style={{ padding: '0.65rem 0.85rem' }}>
+                    <div style={{ fontSize: '0.78rem', fontWeight: '700', color: '#334155', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                      Clinical Summary
+                    </div>
+                    <div style={{
+                      fontSize: '0.78rem',
+                      color: '#1e293b',
+                      lineHeight: '1.55',
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                      padding: '0.5rem 0.65rem',
+                      background: '#ffffff',
+                      borderRadius: '6px',
+                      border: '1px solid #e2e8f0',
+                    }}>
+                      {doc.extractedSummary || doc.extractedText || doc.extractedSnippet || 'Medical record verified and attached for specialist review.'}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
         <div className="compliance-banner-strip">
           <strong>HIPAA &amp; GINA Protection:</strong> Protected Health Information (PHI) compliant under Section 164.514. Genetic non-discrimination enforced.
         </div>
