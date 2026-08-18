@@ -16,23 +16,23 @@ if (typeof window !== 'undefined') {
 const patientDefaults = {
   fullName: '',
   age: '',
-  sex: 'Female',
-  bloodGroup: 'O+',
+  sex: '',
+  bloodGroup: '',
   mobileNumber: '',
   email: '',
-  familyHistory: 'No',
-  familyMemberCount: '0',
+  familyHistory: '',
+  familyMemberCount: '',
   familyMemberRelation: '',
   knownDisorder: '',
-  symptoms: 'No symptoms',
-  purpose: 'General awareness',
-  reportRisk: 'Low',
-  samplePreference: 'Saliva',
-  fastingStatus: 'Yes',
-  consultedDoctor: 'No',
+  symptoms: '',
+  purpose: '',
+  reportRisk: '',
+  samplePreference: '',
+  fastingStatus: '',
+  consultedDoctor: '',
   medications: '',
   allergies: '',
-  location: 'Mumbai',
+  location: '',
   emergencyContactName: '',
   emergencyContact: '',
 };
@@ -280,16 +280,11 @@ const PatientDNAIntake = () => {
   const [autoFillHighlights, setAutoFillHighlights] = useState([]);
 
   useEffect(() => {
-    const saved = localStorage.getItem('geneGuardPatientProfile');
-    if (saved) {
-      setFormData({ ...patientDefaults, ...JSON.parse(saved) });
-    }
-    const savedUploads = localStorage.getItem('geneGuardUploadedRecords');
-    if (savedUploads) {
-      try {
-        setUploadedFiles(JSON.parse(savedUploads));
-      } catch (e) {}
-    }
+    // Clear any previously cached form profile or uploaded files on mount
+    localStorage.removeItem('geneGuardPatientProfile');
+    localStorage.removeItem('geneGuardUploadedRecords');
+    setFormData(patientDefaults);
+    setUploadedFiles([]);
   }, []);
 
   useEffect(() => {
