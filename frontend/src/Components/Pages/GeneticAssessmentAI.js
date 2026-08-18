@@ -72,9 +72,8 @@ const GeneticAssessmentAI = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Botpress state
-  const [botpressReady, setBotpressReady] = useState(false);
-  const botpressInitRef = useRef(false);
+  // ── Botpress Integration ──
+  const [botpressLoaded, setBotpressLoaded] = useState(false);
 
   const dropdownRef = useRef(null);
   const dashboardRef = useRef(null);
@@ -104,61 +103,44 @@ const GeneticAssessmentAI = () => {
     if (savedAgents) { try { setAgentResults(JSON.parse(savedAgents)); } catch (e) { console.warn('Failed to parse agent results:', e); } }
   }, []);
 
-  // ── Botpress: Load embed script on mount ──
+  // ── Botpress Embed Script Ingestion ──
   useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://cdn.botpress.cloud/webchat/v2.2/inject.js';
-    script.async = true;
-    script.onload = () => {
-      setBotpressReady(true);
-      console.log('[GeneticAI] ✓ Botpress script loaded');
+    const script1 = document.createElement('script');
+    script1.src = 'https://cdn.botpress.cloud/webchat/v3.7/inject.js';
+    script1.async = true;
+
+    const script2 = document.createElement('script');
+    script2.src = 'https://files.bpcontent.cloud/2026/05/26/12/20260526120300-AH3YHEZD.js';
+    script2.defer = true;
+    script2.onload = () => {
+      setBotpressLoaded(true);
+      console.log('[GeneticAI] ✓ Botpress bot AH3YHEZD loaded successfully');
     };
-    script.onerror = () => {
-      console.error('[GeneticAI] ✗ Failed to load Botpress script');
-    };
-    document.body.appendChild(script);
+
+    document.body.appendChild(script1);
+    document.body.appendChild(script2);
 
     return () => {
-      // Clean up on unmount
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
-      }
-      const bpContainer = document.getElementById('bp-web-widget-container');
-      if (bpContainer) bpContainer.remove();
-      const bpWidget = document.getElementById('bp-web-widget');
-      if (bpWidget) bpWidget.remove();
+      if (script1.parentNode) script1.parentNode.removeChild(script1);
+      if (script2.parentNode) script2.parentNode.removeChild(script2);
     };
   }, []);
 
-  // ── Botpress: Initialize with user context once script + patient data are ready ──
-  useEffect(() => {
-    if (!botpressReady || !patientLoaded || botpressInitRef.current) return;
-
-    try {
-      window.botpress?.init({
-        botId: 'BOTPRESS_BOT_ID_PLACEHOLDER',
-        clientId: 'BOTPRESS_CLIENT_ID_PLACEHOLDER',
-        userData: {
-          name: patient?.fullName || 'User',
-          age: patient?.age,
-          bloodGroup: patient?.bloodGroup,
-          conditions: patient?.knownDisorder,
-          agentResults: JSON.stringify(agentResults || {})
-        }
-      });
-      botpressInitRef.current = true;
-      console.log('[GeneticAI] ✓ Botpress initialized with patient context');
-    } catch (err) {
-      console.error('[GeneticAI] ✗ Botpress init failed:', err.message);
-    }
-  }, [botpressReady, patientLoaded, patient, agentResults]);
-
-  // ── Open Botpress chat ──
   const openBotpressChat = useCallback(() => {
     try {
-      window.botpress?.open();
+      if (window.botpress) {
+        if (typeof window.botpress.open === 'function') {
+          window.botpress.open();
+        } else if (typeof window.botpress.toggle === 'function') {
+          window.botpress.toggle();
+        }
+      } else if (window.botpressWebChat) {
+        if (typeof window.botpressWebChat.sendEvent === 'function') {
+          window.botpressWebChat.sendEvent({ type: 'show' });
+        }
+      }
     } catch (err) {
-      console.error('[GeneticAI] ✗ Failed to open Botpress:', err.message);
+      console.error('[GeneticAI] Failed to open Botpress:', err);
     }
   }, []);
 
@@ -287,9 +269,9 @@ const GeneticAssessmentAI = () => {
               <span className={`ga-chip-dot ${hasAgents ? 'green' : 'gray'}`} />
               {hasAgents ? `${agentCount} agent result${agentCount > 1 ? 's' : ''} loaded` : 'No agent results'}
             </div>
-            <div className={`ga-context-chip ${botpressReady ? 'active' : 'inactive'}`}>
-              <span className={`ga-chip-dot ${botpressReady ? 'green' : 'amber'}`} />
-              {botpressReady ? 'AI Chat ready' : 'AI Chat loading…'}
+            <div className="ga-context-chip active">
+              <span className="ga-chip-dot green" />
+              AI Chat ready
             </div>
           </div>
         </div>
@@ -437,14 +419,14 @@ const GeneticAssessmentAI = () => {
         </div>
       </footer>
 
-      {/* ── Chat Orb — triggers Botpress ── */}
+      {/* ── Botpress Floating Chat Orb ── */}
       <button className="ga-chat-orb" onClick={openBotpressChat} aria-label="Open AI Chat" id="ga-chat-bubble">
         <div className="ga-orb-ring">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
           </svg>
         </div>
-        <span className="ga-orb-label">{botpressReady ? 'AI Chat' : 'Loading…'}</span>
+        <span className="ga-orb-label">{botpressLoaded ? 'AI Chat' : 'Loading…'}</span>
       </button>
     </div>
   );

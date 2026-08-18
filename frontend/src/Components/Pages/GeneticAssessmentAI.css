@@ -1050,10 +1050,19 @@
   }
 }
 
-/* ─── Botpress: Hide default floating button ─── */
-#bp-web-widget-container {
+/* ─── Botpress: Hide ONLY duplicate floating launcher button so only 1 icon shows ─── */
+.bpw-floating-button,
+#bp-widget-button,
+div[class*="bpw-floating-button"],
+div[class*="bpw-widget-btn"],
+div[class*="bpw-launcher"],
+button[aria-label*="Chat"] {
   display: none !important;
 }
-#bp-web-widget {
-  display: none !important;
+
+/* Ensure Botpress chat container iframe and window are visible when opened */
+#bp-web-widget-container,
+#bp-web-widget,
+div[id*="bp-"] {
+  z-index: 9999 !important;
 }
