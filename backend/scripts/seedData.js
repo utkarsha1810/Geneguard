@@ -522,13 +522,16 @@ const seedDatabase = async () => {
     console.log(`[SeedScript] ✓ ${appointments.length} Appointments inserted`);
 
     console.log('[SeedScript] 🎉 DATABASE SEEDING COMPLETED SUCCESSFULLY!');
-    await mongoose.disconnect();
-    process.exit(0);
+    return true;
   } catch (error) {
-    console.error('[SeedScript] ✗ Error seeding database:', error);
-    await mongoose.disconnect();
-    process.exit(1);
+    console.error('[SeedScript] ✗ Error seeding database:', error.message);
+    return false;
   }
 };
 
-seedDatabase();
+export default seedDatabase;
+
+// Run directly if invoked from CLI
+if (process.argv[1] && process.argv[1].includes('seedData.js')) {
+  seedDatabase().then(() => mongoose.disconnect().then(() => process.exit(0)));
+}

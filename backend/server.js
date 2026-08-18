@@ -31,6 +31,8 @@ import {
   checkGeminiConnection,
 } from './services/geminiService.js';
 import { connectDatabase } from './config/database.js';
+import User from './models/User.js';
+import seedDatabase from './scripts/seedData.js';
 
 // Agent & evaluation functions
 import { evaluatePatient } from '../frontend/src/data/dnaAgents.js';
@@ -191,6 +193,16 @@ const startServer = async () => {
   const dbConnection = await connectDatabase();
   if (dbConnection) {
     logger('✓ MongoDB connection established');
+    try {
+      const userCount = await User.countDocuments();
+      if (userCount === 0) {
+        logger('Database is empty. Automatically seeding initial admin, users, doctors & appointments...', 'info');
+        await seedDatabase();
+        logger('✓ Database seeding completed');
+      }
+    } catch (seedErr) {
+      logger(`Auto-seed check notice: ${seedErr.message}`, 'warn');
+    }
   } else {
     logger('⚠️ MongoDB offline - using rule-based agent fallback', 'warn');
   }
