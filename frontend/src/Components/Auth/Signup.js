@@ -163,8 +163,8 @@ const Navbar = ({ language, setLanguage }) => {
 };
 
 const ROLES = [
-  { key: 'user', label: 'User' },
   { key: 'admin', label: 'Admin' },
+  { key: 'user', label: 'User' },
   { key: 'guest', label: 'Guest' }
 ];
 
@@ -173,7 +173,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5050';
 const Signup = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
-  const [role, setRole] = useState('user');
+  const [role, setRole] = useState('admin');
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
