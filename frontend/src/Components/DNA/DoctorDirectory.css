@@ -695,3 +695,170 @@
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
 }
 
+.doctor-distance-badge.is-tele {
+  background: rgba(147, 51, 234, 0.12);
+  color: #7e22ce;
+  border-color: rgba(147, 51, 234, 0.3);
+}
+
+/* ─── Location Feedback & Fallback Banners ─── */
+.location-feedback-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 0.85rem 1.25rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  animation: fadeInDirectory 0.3s ease;
+}
+
+.location-feedback-banner .feedback-icon {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.location-feedback-banner .feedback-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.location-feedback-banner .feedback-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.location-feedback-banner .feedback-msg {
+  font-size: 0.88rem;
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* Local match style */
+.location-feedback-banner.status-local {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  color: #166534;
+}
+.location-feedback-banner.status-local .feedback-tag {
+  color: #15803d;
+}
+
+/* Regional expansion style */
+.location-feedback-banner.status-regional_fallback {
+  background: rgba(14, 165, 233, 0.1);
+  border: 1px solid rgba(14, 165, 233, 0.35);
+  color: #0369a1;
+}
+.location-feedback-banner.status-regional_fallback .feedback-tag {
+  color: #0284c7;
+}
+
+/* Nationwide fallback style */
+.location-feedback-banner.status-nationwide_fallback {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #b45309;
+}
+.location-feedback-banner.status-nationwide_fallback .feedback-tag {
+  color: #d97706;
+}
+
+/* Permission denied / no location style */
+.location-feedback-banner.status-no_location {
+  background: rgba(100, 116, 139, 0.1);
+  border: 1px solid rgba(100, 116, 139, 0.3);
+  color: #334155;
+}
+
+/* ─── Location Denied Alert & Quick City Selector ─── */
+.location-denied-alert {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  animation: fadeInDirectory 0.3s ease;
+}
+
+.denied-alert-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin-bottom: 0.75rem;
+  color: #92400e;
+}
+
+.denied-alert-head .denied-icon {
+  margin-top: 2px;
+  color: #d97706;
+  flex-shrink: 0;
+}
+
+.denied-text strong {
+  display: block;
+  font-size: 0.92rem;
+  margin-bottom: 0.15rem;
+}
+
+.denied-text p {
+  font-size: 0.85rem;
+  margin: 0;
+  color: #78350f;
+}
+
+.quick-cities-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.quick-city-chip {
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid rgba(217, 119, 6, 0.35);
+  background: #ffffff;
+  color: #92400e;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quick-city-chip:hover {
+  background: #fef3c7;
+  border-color: #d97706;
+}
+
+.quick-city-chip.active {
+  background: #d97706;
+  color: #ffffff;
+  border-color: #d97706;
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 12px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+}
+
+.clear-search-btn:hover {
+  color: #475569;
+}
+
+.loading-subtext {
+  display: block;
+  font-size: 0.82rem;
+  color: #8fa0b0;
+  margin-top: 0.4rem;
+}
+
+

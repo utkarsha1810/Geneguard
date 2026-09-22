@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Signup.css';
 import '../Pages/Home.css';
@@ -170,6 +170,19 @@ const ROLES = [
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5050';
 
+const getPasswordStrength = (pw) => {
+  if (!pw) return { score: 0, label: '', cls: '' };
+  let s = 0;
+  if (pw.length >= 8) s++;
+  if (/[A-Z]/.test(pw)) s++;
+  if (/[a-z]/.test(pw)) s++;
+  if (/\d/.test(pw)) s++;
+  if (/[!@#$%^&*(),.?":{}|<>]/.test(pw)) s++;
+  if (s <= 2) return { score: 1, label: 'Weak', cls: 'weak' };
+  if (s <= 3) return { score: 2, label: 'Medium', cls: 'medium' };
+  return { score: 3, label: 'Strong', cls: 'strong' };
+};
+
 const Signup = () => {
   const navigate = useNavigate();
   const [language, setLanguage] = useState('en');
@@ -193,53 +206,181 @@ const Signup = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [signupSuccess, setSignupSuccess] = useState(false);
 
+  const formRef = useRef(null);
+  const pwStrength = useMemo(() => getPasswordStrength(formData.password), [formData.password]);
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    const val = type === 'checkbox' ? checked : value;
+    let val = type === 'checkbox' ? checked : value;
+    if (name === 'email') val = val.trim();
+
     setFormData(prev => ({ ...prev, [name]: val }));
+    
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
+    
+    if (name === 'password' && formData.confirmPassword && val !== formData.confirmPassword) {
+      setErrors(prev => ({...prev, confirmPassword: 'Passwords do not match'}));
+    } else if (name === 'password' || name === 'confirmPassword') {
+      setErrors(prev => ({...prev, confirmPassword: ''}));
+    }
+
     if (globalError) setGlobalError('');
   };
 
-  const validate = () => {
+  const validateField = (name, value) => {
+    let error = '';
+    const trimmedVal = typeof value === 'string' ? value.trim() : value;
+    
+    if (role === 'guest') {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+      return;
+    }
+
+    switch (name) {
+      case 'firstName':
+        if (!trimmedVal) error = 'First name is required';
+        else if (trimmedVal.length < 2) error = 'First name must be at least 2 characters';
+        else if (trimmedVal.length > 50) error = 'First name must be under 50 characters';
+        else if (!/^[A-Za-z\s'\-]+$/.test(trimmedVal)) error = 'Name can only contain letters';
+        break;
+      case 'lastName':
+        if (trimmedVal.length > 0) {
+          if (trimmedVal.length < 2) error = 'Last name must be at least 2 characters';
+          else if (trimmedVal.length > 50) error = 'Last name must be under 50 characters';
+          else if (!/^[A-Za-z\s'\-]+$/.test(trimmedVal)) error = 'Name can only contain letters';
+        }
+        break;
+      case 'email':
+        if (!trimmedVal) error = 'Email is required';
+        else if (/\s/.test(trimmedVal)) error = 'Email cannot contain spaces';
+        else if (trimmedVal.length > 100) error = 'Email must be under 100 characters';
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedVal)) error = 'Enter a valid email address';
+        break;
+      case 'phone':
+        if (trimmedVal) {
+          if (!/^[6-9]\d{9}$/.test(trimmedVal) || trimmedVal.length !== 10) error = 'Enter a valid 10-digit Indian mobile number';
+        }
+        break;
+      case 'dateOfBirth':
+        if (trimmedVal) {
+          const dob = new Date(trimmedVal);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const minDate = new Date();
+          minDate.setFullYear(today.getFullYear() - 120);
+
+          if (dob >= today) error = 'Date of birth cannot be today or a future date';
+          else if (dob < minDate) error = 'Date of birth indicates age over 120 years';
+        }
+        break;
+      case 'password':
+        if (!value) error = 'Password is required';
+        else if (value.length < 8) error = 'Password must be at least 8 characters';
+        else {
+          const missing = [];
+          if (!/[A-Z]/.test(value)) missing.push('uppercase');
+          if (!/[a-z]/.test(value)) missing.push('lowercase');
+          if (!/\d/.test(value)) missing.push('number');
+          if (!/[!@#$%^&*(),.?":{}|<>]/.test(value)) missing.push('special character (!@#$%^&* etc.)');
+          
+          if (missing.length > 0) {
+            error = 'Password must contain: ' + missing.join(', ');
+          }
+        }
+        break;
+      case 'confirmPassword':
+        if (!value) error = 'Please confirm your password';
+        else if (value !== formData.password) error = 'Passwords do not match';
+        break;
+      case 'adminCode':
+        if (role === 'admin') {
+          if (!trimmedVal) error = 'Admin Secret Code is required';
+          else if (trimmedVal.length < 6) error = 'Admin code must be at least 6 characters';
+        }
+        break;
+      case 'consent':
+        if (!value) error = 'You must agree to the Privacy Policy & HIPAA consent';
+        break;
+      default:
+        break;
+    }
+    setErrors(prev => ({ ...prev, [name]: error }));
+  };
+
+  const handleBlur = (e) => { 
+    validateField(e.target.name, e.target.type === 'checkbox' ? e.target.checked : e.target.value); 
+  };
+
+  const validate = (data = formData) => {
     const errs = {};
     if (role === 'guest') return errs;
 
-    if (!formData.firstName.trim()) {
-      errs.firstName = 'First Name is required';
+    // FIRST NAME
+    const fn = data.firstName.trim();
+    if (!fn) errs.firstName = 'First name is required';
+    else if (fn.length < 2) errs.firstName = 'First name must be at least 2 characters';
+    else if (fn.length > 50) errs.firstName = 'First name must be under 50 characters';
+    else if (!/^[A-Za-z\s'\-]+$/.test(fn)) errs.firstName = 'Name can only contain letters';
+
+    // LAST NAME
+    const ln = data.lastName.trim();
+    if (ln.length > 0) {
+      if (ln.length < 2) errs.lastName = 'Last name must be at least 2 characters';
+      else if (ln.length > 50) errs.lastName = 'Last name must be under 50 characters';
+      else if (!/^[A-Za-z\s'\-]+$/.test(ln)) errs.lastName = 'Name can only contain letters';
     }
 
-    if (!formData.email.trim()) {
-      errs.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errs.email = 'Enter a valid email address';
+    // EMAIL
+    const em = data.email.trim();
+    if (!em) errs.email = 'Email is required';
+    else if (/\s/.test(em)) errs.email = 'Email cannot contain spaces';
+    else if (em.length > 100) errs.email = 'Email must be under 100 characters';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) errs.email = 'Enter a valid email address';
+
+    // PHONE
+    const ph = data.phone.trim();
+    if (ph) {
+      if (!/^[6-9]\d{9}$/.test(ph) || ph.length !== 10) errs.phone = 'Enter a valid 10-digit Indian mobile number';
     }
 
-    if (formData.phone.trim() && !/^\d{10}$/.test(formData.phone.trim())) {
-      errs.phone = 'Phone number must be exactly 10 digits';
+    // DATE OF BIRTH
+    if (data.dateOfBirth) {
+      const dob = new Date(data.dateOfBirth);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const minDate = new Date();
+      minDate.setFullYear(today.getFullYear() - 120);
+
+      if (dob >= today) errs.dateOfBirth = 'Date of birth cannot be today or a future date';
+      else if (dob < minDate) errs.dateOfBirth = 'Date of birth indicates age over 120 years';
     }
 
-    if (!formData.password) {
-      errs.password = 'Password is required';
-    } else if (formData.password.length < 8) {
-      errs.password = 'Password must be at least 8 characters';
-    } else {
-      const hasNumber = /\d/.test(formData.password);
-      const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(formData.password);
-      if (!hasNumber || !hasSpecial) {
-        errs.password = 'Must contain at least 1 number & 1 special character';
-      }
+    // PASSWORD
+    const pw = data.password;
+    if (!pw) errs.password = 'Password is required';
+    else if (pw.length < 8) errs.password = 'Password must be at least 8 characters';
+    else {
+      const missing = [];
+      if (!/[A-Z]/.test(pw)) missing.push('uppercase');
+      if (!/[a-z]/.test(pw)) missing.push('lowercase');
+      if (!/\d/.test(pw)) missing.push('number');
+      if (!/[!@#$%^&*(),.?":{}|<>]/.test(pw)) missing.push('special character (!@#$%^&* etc.)');
+      if (missing.length > 0) errs.password = 'Password must contain: ' + missing.join(', ');
     }
 
-    if (formData.password !== formData.confirmPassword) {
-      errs.confirmPassword = 'Passwords do not match';
+    // CONFIRM PASSWORD
+    if (!data.confirmPassword) errs.confirmPassword = 'Please confirm your password';
+    else if (data.confirmPassword !== pw) errs.confirmPassword = 'Passwords do not match';
+
+    // ADMIN CODE
+    if (role === 'admin') {
+      const ac = data.adminCode.trim();
+      if (!ac) errs.adminCode = 'Admin Secret Code is required';
+      else if (ac.length < 6) errs.adminCode = 'Admin code must be at least 6 characters';
     }
 
-    if (role === 'admin' && !formData.adminCode.trim()) {
-      errs.adminCode = 'Admin Secret Code is required for admin role';
-    }
-
-    if (!formData.consent) {
+    // CONSENT
+    if (!data.consent) {
       errs.consent = 'You must agree to the Privacy Policy & HIPAA consent';
     }
 
@@ -248,9 +389,24 @@ const Signup = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const validationErrors = validate();
+    
+    const trimmedData = {
+      ...formData,
+      firstName: formData.firstName.trim(),
+      lastName: formData.lastName.trim(),
+      email: formData.email.trim()
+    };
+    setFormData(trimmedData);
+
+    const validationErrors = validate(trimmedData);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
+      const firstErrorField = Object.keys(validationErrors)[0];
+      const element = document.getElementById(firstErrorField);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.focus();
+      }
       return;
     }
 
@@ -261,15 +417,15 @@ const Signup = () => {
       const payload = role === 'guest'
         ? { role }
         : {
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            email: formData.email,
-            phone: formData.phone,
-            dateOfBirth: formData.dateOfBirth,
-            password: formData.password,
+            firstName: trimmedData.firstName,
+            lastName: trimmedData.lastName,
+            email: trimmedData.email,
+            phone: trimmedData.phone,
+            dateOfBirth: trimmedData.dateOfBirth,
+            password: trimmedData.password,
             role,
-            adminCode: formData.adminCode,
-            consentGiven: formData.consent
+            adminCode: trimmedData.adminCode,
+            consentGiven: trimmedData.consent
           };
 
       const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
@@ -379,7 +535,7 @@ const Signup = () => {
               </div>
             )}
 
-            <form className="signup-form" onSubmit={handleSubmit} noValidate>
+            <form ref={formRef} className="signup-form" onSubmit={handleSubmit} noValidate>
               {role === 'guest' ? (
                 <div className="guest-note">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" width="18" height="18">
@@ -400,6 +556,7 @@ const Signup = () => {
                         name="firstName"
                         value={formData.firstName}
                         onChange={handleChange}
+                        onBlur={handleBlur}
                         className={errors.firstName ? 'input-error' : ''}
                       />
                       {errors.firstName && (
@@ -415,7 +572,12 @@ const Signup = () => {
                         name="lastName"
                         value={formData.lastName}
                         onChange={handleChange}
+                        onBlur={handleBlur}
+                        className={errors.lastName ? 'input-error' : ''}
                       />
+                      {errors.lastName && (
+                        <div className="field-error">{errors.lastName}</div>
+                      )}
                     </div>
                   </div>
 
@@ -428,6 +590,7 @@ const Signup = () => {
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
+                      onBlur={handleBlur}
                       className={errors.email ? 'input-error' : ''}
                       autoComplete="email"
                     />
@@ -446,6 +609,7 @@ const Signup = () => {
                         name="phone"
                         value={formData.phone}
                         onChange={handleChange}
+                        onBlur={handleBlur}
                         className={errors.phone ? 'input-error' : ''}
                         maxLength={10}
                       />
@@ -462,7 +626,12 @@ const Signup = () => {
                         name="dateOfBirth"
                         value={formData.dateOfBirth}
                         onChange={handleChange}
+                        onBlur={handleBlur}
+                        className={errors.dateOfBirth ? 'input-error' : ''}
                       />
+                      {errors.dateOfBirth && (
+                        <div className="field-error">{errors.dateOfBirth}</div>
+                      )}
                     </div>
                   </div>
 
@@ -476,6 +645,7 @@ const Signup = () => {
                         name="adminCode"
                         value={formData.adminCode}
                         onChange={handleChange}
+                        onBlur={handleBlur}
                         className={errors.adminCode ? 'input-error' : ''}
                       />
                       {errors.adminCode && (
@@ -493,6 +663,7 @@ const Signup = () => {
                       name="password"
                       value={formData.password}
                       onChange={handleChange}
+                      onBlur={handleBlur}
                       className={errors.password ? 'input-error' : ''}
                       autoComplete="new-password"
                     />
@@ -516,6 +687,16 @@ const Signup = () => {
                         </svg>
                       )}
                     </button>
+                    {formData.password && (
+                      <div className="password-strength">
+                        <div className="strength-bars">
+                          {[1, 2, 3].map(i => (
+                            <div key={i} className={`strength-bar ${i <= pwStrength.score ? pwStrength.cls : ''}`} />
+                          ))}
+                        </div>
+                        <span className={`strength-label ${pwStrength.cls}`}>{pwStrength.label}</span>
+                      </div>
+                    )}
                     {errors.password && (
                       <div className="field-error">{errors.password}</div>
                     )}
@@ -530,6 +711,7 @@ const Signup = () => {
                       name="confirmPassword"
                       value={formData.confirmPassword}
                       onChange={handleChange}
+                      onBlur={handleBlur}
                       className={errors.confirmPassword ? 'input-error' : ''}
                       autoComplete="new-password"
                     />
@@ -566,6 +748,7 @@ const Signup = () => {
                       name="consent"
                       checked={formData.consent}
                       onChange={handleChange}
+                      onBlur={handleBlur}
                     />
                     <label htmlFor="consent">
                       I agree to the <a href="#privacy">Privacy Policy</a> and <a href="#hipaa">HIPAA Compliance Terms</a>

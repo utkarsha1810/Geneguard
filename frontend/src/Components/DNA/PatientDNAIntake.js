@@ -242,10 +242,11 @@ ${rawText.substring(0, 15000)}
   return generateClinicalSummaryFallback(rawText, fileName);
 };
 
-const IntakeField = ({ label, children, full = false }) => (
+const IntakeField = ({ label, children, full = false, error }) => (
   <div className={`patient-field ${full ? 'full' : ''}`}>
     <label className="patient-field-label">{label}</label>
     {children}
+    {error && <div className="intake-field-error" style={{color: '#ef4444', fontSize: '0.75rem', marginTop: '4px'}}>{error}</div>}
   </div>
 );
 
@@ -270,6 +271,9 @@ const ProgressBar = ({ label, value }) => {
 const PatientDNAIntake = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+  const formRef = useRef(null);
+  const [errors, setErrors] = useState({});
+  const [isValidating, setIsValidating] = useState(false);
   const [formData, setFormData] = useState(patientDefaults);
   const [evaluation, setEvaluation] = useState(() => evaluatePatient(patientDefaults));
   const [apiMode, setApiMode] = useState('fallback');
@@ -308,7 +312,117 @@ const PatientDNAIntake = () => {
     run();
   }, [formData, uploadedFiles]);
 
-  const handleChange = (name, value) => setFormData((prev) => ({ ...prev, [name]: value }));
+  const validateField = (name, value, allData) => {
+    let error = '';
+    const val = value ? String(value).trim() : '';
+
+    switch (name) {
+      case 'fullName':
+        if (!val) error = 'Full name is required';
+        else if (val.length < 2) error = 'Full name must be at least 2 characters';
+        else if (val.length > 50) error = 'Full name must be under 50 characters';
+        else if (!/^[A-Za-z\s'\-]+$/.test(val)) error = 'Name can only contain letters';
+        break;
+      case 'age':
+        if (!val) error = 'Age is required';
+        else if (!/^\d+$/.test(val)) error = 'Age must be a whole number';
+        else if (parseInt(val, 10) < 0) error = 'Age cannot be negative';
+        else if (parseInt(val, 10) > 120) error = 'Age must be between 0 and 120';
+        break;
+      case 'mobileNumber':
+        if (val) {
+          const digits = val.replace(/\D/g, '');
+          if (digits.length !== 10 || !/^[6-9]/.test(digits)) {
+            error = 'Enter a valid 10-digit Indian mobile number';
+          }
+        }
+        break;
+      case 'email':
+        if (val) {
+          if (val.includes(' ')) error = 'Email cannot contain spaces';
+          else if (val.length > 100) error = 'Email must be under 100 characters';
+          else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) error = 'Enter a valid email address';
+        }
+        break;
+      case 'familyMemberCount':
+        if (val) {
+          if (!/^\d+$/.test(val)) error = 'Count must be a whole number';
+          else if (parseInt(val, 10) < 0) error = 'Count cannot be negative';
+          else if (parseInt(val, 10) > 50) error = 'Maximum affected family members is 50';
+          
+          if (!error) {
+            const hist = allData.familyHistory;
+            const count = parseInt(val, 10);
+            if (hist === 'No' && count > 0) {
+              error = 'Affected count must be 0 when no family history';
+            } else if (hist === 'Yes' && count < 1) {
+              error = 'At least 1 affected member required when family history is Yes';
+            }
+          }
+        } else {
+           if (allData.familyHistory === 'Yes') error = 'At least 1 affected member required when family history is Yes';
+        }
+        break;
+      case 'emergencyContactName':
+        if (val) {
+          if (val.length < 2) error = 'Emergency contact name must be at least 2 characters';
+          else if (val.length > 50) error = 'Emergency contact name must be under 50 characters';
+          else if (!/^[A-Za-z\s'\-]+$/.test(val)) error = 'Name can only contain letters';
+        }
+        break;
+      case 'emergencyContact':
+        if (val) {
+          const digits = val.replace(/\D/g, '');
+          if (digits.length !== 10 || !/^[6-9]/.test(digits)) {
+            error = 'Enter a valid 10-digit Indian mobile number';
+          }
+        }
+        break;
+      case 'location':
+        if (val) {
+          if (val.length < 2) error = 'Location must be at least 2 characters';
+          else if (!/^[A-Za-z\s]+$/.test(val)) error = 'Location can only contain letters and spaces';
+        }
+        break;
+      default:
+        break;
+    }
+    return error;
+  };
+
+  const validateForm = (data) => {
+    const newErrors = {};
+    const fieldsToValidate = ['fullName', 'age', 'mobileNumber', 'email', 'familyMemberCount', 'emergencyContactName', 'emergencyContact', 'location'];
+    
+    fieldsToValidate.forEach(field => {
+      const error = validateField(field, data[field], data);
+      if (error) newErrors[field] = error;
+    });
+
+    if (data.familyHistory === 'Yes' && (!data.familyMemberCount || parseInt(data.familyMemberCount, 10) < 1)) {
+        newErrors.familyMemberCount = 'At least 1 affected member required when family history is Yes';
+    }
+    if (data.familyHistory === 'No' && data.familyMemberCount && parseInt(data.familyMemberCount, 10) > 0) {
+        newErrors.familyMemberCount = 'Affected count must be 0 when no family history';
+    }
+
+    return newErrors;
+  };
+
+  const handleBlur = (name, value) => {
+    const error = validateField(name, value, formData);
+    setErrors(prev => ({ ...prev, [name]: error }));
+  };
+
+  const handleChange = (name, value) => {
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: '' }));
+    
+    if (name === 'familyHistory') {
+      const countError = validateField('familyMemberCount', formData.familyMemberCount, { ...formData, familyHistory: value });
+      setErrors(prev => ({ ...prev, familyMemberCount: countError || '' }));
+    }
+  };
 
   // File Parsing Pipeline — 3-phase: Read → AI Analyze → Done
   const handleFilesSelected = async (e) => {
@@ -458,8 +572,30 @@ const PatientDNAIntake = () => {
   };
 
   const handleContinue = async () => {
+    setIsValidating(true);
+    const formErrors = validateForm(formData);
+    if (Object.keys(formErrors).length > 0) {
+      setErrors(formErrors);
+      setIsValidating(false);
+      if (formRef.current) {
+        const firstErrorNode = formRef.current.querySelector('.intake-field-error');
+        if (firstErrorNode) {
+          firstErrorNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      return;
+    }
+    setIsValidating(false);
+
+    let updatedData = { ...formData };
+    if (!updatedData.medications || updatedData.medications.trim() === '') updatedData.medications = 'None';
+    if (!updatedData.allergies || updatedData.allergies.trim() === '') updatedData.allergies = 'None';
+    setFormData(updatedData);
+
     const fullProfile = {
-      ...formData,
+      ...updatedData,
       medicalHistoryFiles: uploadedFiles,
     };
 
@@ -495,7 +631,7 @@ const PatientDNAIntake = () => {
             <button className="intake-btn-secondary" onClick={() => setShowReportViewer(true)}>
               <FileCheck size={16} /> Preview Clinical Report
             </button>
-            <button className="intake-btn-primary" onClick={handleContinue}>
+            <button className="intake-btn-primary" onClick={handleContinue} disabled={isValidating}>
               Continue to Agents <ArrowRight size={16} />
             </button>
           </div>
@@ -505,7 +641,7 @@ const PatientDNAIntake = () => {
       {/* ─── Main 2-Column Layout ─── */}
       <main className="intake-main-container">
         {/* LEFT COLUMN: Input Form */}
-        <div className="intake-form-column">
+        <div className="intake-form-column" ref={formRef}>
           <div className="intake-card">
             <div className="intake-card-header">
               <div>
@@ -520,20 +656,22 @@ const PatientDNAIntake = () => {
             {/* 1. Basic Identity */}
             <div className="intake-section-heading">Basic Identity</div>
             <div className="intake-form-grid three-col">
-              <IntakeField label="Full Name">
+              <IntakeField label="Full Name" error={errors.fullName}>
                 <input
                   type="text"
                   value={formData.fullName}
                   onChange={(e) => handleChange('fullName', e.target.value)}
+                  onBlur={(e) => handleBlur('fullName', e.target.value)}
                   placeholder="e.g. Eleanor Vance"
                 />
               </IntakeField>
 
-              <IntakeField label="Age">
+              <IntakeField label="Age" error={errors.age}>
                 <input
                   type="number"
                   value={formData.age}
                   onChange={(e) => handleChange('age', e.target.value)}
+                  onBlur={(e) => handleBlur('age', e.target.value)}
                   placeholder="e.g. 34"
                 />
               </IntakeField>
@@ -554,20 +692,22 @@ const PatientDNAIntake = () => {
                 </select>
               </IntakeField>
 
-              <IntakeField label="Mobile Number">
+              <IntakeField label="Mobile Number" error={errors.mobileNumber}>
                 <input
                   type="text"
                   value={formData.mobileNumber}
                   onChange={(e) => handleChange('mobileNumber', e.target.value)}
+                  onBlur={(e) => handleBlur('mobileNumber', e.target.value)}
                   placeholder="+91 98765 43210"
                 />
               </IntakeField>
 
-              <IntakeField label="Email Address">
+              <IntakeField label="Email Address" error={errors.email}>
                 <input
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleChange('email', e.target.value)}
+                  onBlur={(e) => handleBlur('email', e.target.value)}
                   placeholder="patient@example.com"
                 />
               </IntakeField>
@@ -583,11 +723,12 @@ const PatientDNAIntake = () => {
                 </select>
               </IntakeField>
 
-              <IntakeField label="Affected Family Members">
+              <IntakeField label="Affected Family Members" error={errors.familyMemberCount}>
                 <input
                   type="number"
                   value={formData.familyMemberCount}
                   onChange={(e) => handleChange('familyMemberCount', e.target.value)}
+                  onBlur={(e) => handleBlur('familyMemberCount', e.target.value)}
                   placeholder="0"
                 />
               </IntakeField>
@@ -658,11 +799,12 @@ const PatientDNAIntake = () => {
                 />
               </IntakeField>
 
-              <IntakeField label="Location / City">
+              <IntakeField label="Location / City" error={errors.location}>
                 <input
                   type="text"
                   value={formData.location}
                   onChange={(e) => handleChange('location', e.target.value)}
+                  onBlur={(e) => handleBlur('location', e.target.value)}
                   placeholder="Mumbai, Maharashtra"
                 />
               </IntakeField>
@@ -735,20 +877,22 @@ const PatientDNAIntake = () => {
             {/* 5. Emergency Contact */}
             <div className="intake-section-heading">Emergency Contact Support</div>
             <div className="intake-form-grid two-col">
-              <IntakeField label="Contact Person Name">
+              <IntakeField label="Contact Person Name" error={errors.emergencyContactName}>
                 <input
                   type="text"
                   value={formData.emergencyContactName}
                   onChange={(e) => handleChange('emergencyContactName', e.target.value)}
+                  onBlur={(e) => handleBlur('emergencyContactName', e.target.value)}
                   placeholder="Emergency contact name"
                 />
               </IntakeField>
 
-              <IntakeField label="Emergency Phone Number">
+              <IntakeField label="Emergency Phone Number" error={errors.emergencyContact}>
                 <input
                   type="text"
                   value={formData.emergencyContact}
                   onChange={(e) => handleChange('emergencyContact', e.target.value)}
+                  onBlur={(e) => handleBlur('emergencyContact', e.target.value)}
                   placeholder="Emergency contact phone"
                 />
               </IntakeField>
@@ -807,7 +951,7 @@ const PatientDNAIntake = () => {
 
             {/* Action CTA */}
             <div className="sidebar-cta-box">
-              <button className="intake-btn-primary full-width" onClick={handleContinue}>
+              <button className="intake-btn-primary full-width" onClick={handleContinue} disabled={isValidating}>
                 Continue to Dynamic Dashboard <ArrowRight size={16} />
               </button>
             </div>

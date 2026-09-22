@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Register.css';
 
@@ -6,15 +6,14 @@ import './Register.css';
 const getPwStrength = (pw) => {
   if (!pw) return { score: 0, label: '', cls: '' };
   let s = 0;
-  if (pw.length >= 8)  s++;
-  if (pw.length >= 12) s++;
-  if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) s++;
+  if (pw.length >= 8) s++;
+  if (/[A-Z]/.test(pw)) s++;
+  if (/[a-z]/.test(pw)) s++;
   if (/\d/.test(pw)) s++;
   if (/[^A-Za-z0-9]/.test(pw)) s++;
-  if (s <= 1) return { score: 1, label: 'Weak',   cls: 'weak' };
-  if (s === 2) return { score: 2, label: 'Fair',   cls: 'fair' };
-  if (s === 3) return { score: 3, label: 'Good',   cls: 'good' };
-  return         { score: 4, label: 'Strong', cls: 'strong' };
+  if (s <= 2) return { score: 1, label: 'Weak', cls: 'weak' };
+  if (s <= 3) return { score: 2, label: 'Medium', cls: 'medium' };
+  return { score: 3, label: 'Strong', cls: 'strong' };
 };
 
 const ErrIcon = () => (
@@ -45,6 +44,7 @@ const EyeOffIcon = () => (
 
 const Register = () => {
   const navigate = useNavigate();
+  const formRef = useRef(null);
 
   const [form, setForm] = useState({
     firstName: '', lastName: '',
@@ -62,35 +62,92 @@ const Register = () => {
 
   const pwStrength = useMemo(() => getPwStrength(form.password), [form.password]);
 
-  const handleChange = (e) => {
+  const validateField = (name, value, currentForm = form) => {
+    let error = '';
+    switch (name) {
+      case 'firstName':
+        if (!value.trim()) error = 'First name is required';
+        else if (value.trim().length < 2) error = 'First name must be at least 2 characters';
+        else if (value.trim().length > 50) error = 'First name must be under 50 characters';
+        else if (!/^[A-Za-z\s'\-]+$/.test(value)) error = 'Name can only contain letters';
+        break;
+      case 'lastName':
+        if (!value.trim()) error = 'Last name is required';
+        else if (value.trim().length < 2) error = 'Last name must be at least 2 characters';
+        else if (value.trim().length > 50) error = 'Last name must be under 50 characters';
+        else if (!/^[A-Za-z\s'\-]+$/.test(value)) error = 'Name can only contain letters';
+        break;
+      case 'email':
+        if (!value) error = 'Email is required';
+        else if (/\s/.test(value)) error = 'Email cannot contain spaces';
+        else if (value.length > 100) error = 'Email must be under 100 characters';
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) error = 'Enter a valid email address';
+        break;
+      case 'phone':
+        if (value) {
+          const digits = value.replace(/\D/g, '');
+          if (digits.length !== 10) error = 'Enter a valid 10-digit Indian mobile number';
+          else if (!/^[6-9]/.test(digits)) error = 'Enter a valid 10-digit Indian mobile number';
+        }
+        break;
+      case 'password':
+        if (!value) {
+          error = 'Password is required';
+        } else if (value.length < 8) {
+          error = 'Password must be at least 8 characters';
+        } else {
+          const missing = [];
+          if (!/[A-Z]/.test(value)) missing.push('uppercase letter');
+          if (!/[a-z]/.test(value)) missing.push('lowercase letter');
+          if (!/\d/.test(value)) missing.push('number');
+          if (!/[^A-Za-z0-9]/.test(value)) missing.push('special character');
+          if (missing.length > 0) {
+            error = `Password must contain: ${missing.join(', ')}`;
+          }
+        }
+        break;
+      case 'confirmPassword':
+        if (!value) error = 'Please confirm your password';
+        else if (value !== currentForm.password) error = 'Passwords do not match';
+        break;
+      default:
+        break;
+    }
+    return error;
+  };
+
+  const handleBlur = (e) => {
     const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
-    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
+    const error = validateField(name, value);
+    setErrors(prev => ({ ...prev, [name]: error }));
+  };
+
+  const handleChange = (e) => {
+    let { name, value } = e.target;
+    if (name === 'email') value = value.trim();
+    
+    const newForm = { ...form, [name]: value };
+    setForm(newForm);
+    
+    setErrors(prev => {
+      const nextErrs = { ...prev, [name]: '' };
+      if (name === 'password' && newForm.confirmPassword) {
+        const cpErr = validateField('confirmPassword', newForm.confirmPassword, newForm);
+        nextErrs.confirmPassword = cpErr || '';
+      }
+      return nextErrs;
+    });
+
     if (globalError) setGlobalError('');
   };
 
   const validate = () => {
     const e = {};
-    if (!form.firstName.trim()) e.firstName = 'First name is required';
-    if (!form.lastName.trim())  e.lastName  = 'Last name is required';
-    if (!form.email.trim()) {
-      e.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      e.email = 'Enter a valid email';
-    }
-    if (form.phone && !/^\+?[\d\s\-(]{7,15}$/.test(form.phone)) {
-      e.phone = 'Enter a valid phone number';
-    }
-    if (!form.password) {
-      e.password = 'Password is required';
-    } else if (form.password.length < 8) {
-      e.password = 'Minimum 8 characters required';
-    }
-    if (!form.confirmPassword) {
-      e.confirmPassword = 'Please confirm your password';
-    } else if (form.password !== form.confirmPassword) {
-      e.confirmPassword = 'Passwords do not match';
-    }
+    ['firstName', 'lastName', 'email', 'phone', 'password', 'confirmPassword'].forEach(field => {
+      const err = validateField(field, form[field], form);
+      if (err) e[field] = err;
+    });
+    
     if (!termsAccepted) e.terms = 'Please accept the terms to continue';
     return e;
   };
@@ -98,7 +155,18 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = validate();
-    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
+    if (Object.keys(errs).length > 0) { 
+      setErrors(errs);
+      setTimeout(() => {
+        const firstError = Object.keys(errs)[0];
+        const errorElement = formRef.current?.querySelector(`[name="${firstError}"]`) || formRef.current?.querySelector('.reg-error');
+        if (errorElement) {
+          errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          errorElement.focus?.();
+        }
+      }, 0);
+      return; 
+    }
     setIsLoading(true);
     setGlobalError('');
     try {
@@ -165,7 +233,7 @@ const Register = () => {
           </div>
         )}
 
-        <form className="reg-form" onSubmit={handleSubmit} noValidate>
+        <form className="reg-form" onSubmit={handleSubmit} noValidate ref={formRef}>
 
           {/* First name + Last name */}
           <div className="reg-row">
@@ -173,7 +241,7 @@ const Register = () => {
               <label htmlFor="firstName">First Name</label>
               <input
                 id="firstName" type="text" name="firstName"
-                value={form.firstName} onChange={handleChange}
+                value={form.firstName} onChange={handleChange} onBlur={handleBlur}
                 className={errors.firstName ? 'reg-error' : ''}
                 autoComplete="given-name"
               />
@@ -184,7 +252,7 @@ const Register = () => {
               <label htmlFor="lastName">Last Name</label>
               <input
                 id="lastName" type="text" name="lastName"
-                value={form.lastName} onChange={handleChange}
+                value={form.lastName} onChange={handleChange} onBlur={handleBlur}
                 className={errors.lastName ? 'reg-error' : ''}
                 autoComplete="family-name"
               />
@@ -197,7 +265,7 @@ const Register = () => {
             <label htmlFor="reg-email">Email Address</label>
             <input
               id="reg-email" type="email" name="email"
-              value={form.email} onChange={handleChange}
+              value={form.email} onChange={handleChange} onBlur={handleBlur}
               className={errors.email ? 'reg-error' : ''}
               autoComplete="email"
             />
@@ -211,7 +279,7 @@ const Register = () => {
               <input
                 id="phone" type="tel" name="phone"
                 placeholder="+91 98765 43210"
-                value={form.phone} onChange={handleChange}
+                value={form.phone} onChange={handleChange} onBlur={handleBlur}
                 className={errors.phone ? 'reg-error' : ''}
                 autoComplete="tel"
               />
@@ -246,7 +314,7 @@ const Register = () => {
               type={showPw ? 'text' : 'password'}
               name="password"
               placeholder="Min. 8 characters"
-              value={form.password} onChange={handleChange}
+              value={form.password} onChange={handleChange} onBlur={handleBlur}
               className={errors.password ? 'reg-error' : ''}
               autoComplete="new-password"
             />
@@ -259,14 +327,14 @@ const Register = () => {
             {form.password && (
               <div className="reg-strength-wrap">
                 <div className="reg-strength-bars">
-                  {[1,2,3,4].map(i => (
+                  {[1,2,3].map(i => (
                     <div key={i}
                       className={`reg-strength-bar ${i <= pwStrength.score ? pwStrength.cls : ''}`}
                     />
                   ))}
                 </div>
                 <span className={`reg-strength-label ${pwStrength.cls}`}>
-                  {pwStrength.label} password
+                  {pwStrength.label}
                 </span>
               </div>
             )}
@@ -281,7 +349,7 @@ const Register = () => {
               type={showConfirm ? 'text' : 'password'}
               name="confirmPassword"
               placeholder="Re-enter your password"
-              value={form.confirmPassword} onChange={handleChange}
+              value={form.confirmPassword} onChange={handleChange} onBlur={handleBlur}
               className={errors.confirmPassword ? 'reg-error' : ''}
               autoComplete="new-password"
             />

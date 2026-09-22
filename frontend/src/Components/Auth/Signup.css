@@ -582,3 +582,48 @@ body {
 .signup-page .home-navbar-scrolled .home-hamburger-line {
   background-color: #ffffff;
 }
+
+/* ── Password strength indicator ───────────────────────────────────────── */
+.password-strength {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.strength-bars {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+}
+
+.strength-bar {
+  height: 3px;
+  flex: 1;
+  border-radius: 2px;
+  background: #d0e8f1;
+  transition: background 0.25s;
+}
+
+.strength-bar.weak   { background: #e05252; }
+.strength-bar.medium { background: #f0a500; }
+.strength-bar.strong { background: #1a9e8f; }
+
+.strength-label {
+  font-size: 11px;
+  color: #9abcca;
+  white-space: nowrap;
+}
+.strength-label.weak   { color: #e05252; }
+.strength-label.medium { color: #f0a500; }
+.strength-label.strong { color: #1a9e8f; }
+
+/* ── Field error styles ────────────────────────────────────────────────── */
+.field-error {
+  color: #e05252;
+  font-size: 12px;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}

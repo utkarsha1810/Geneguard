@@ -225,12 +225,14 @@ body {
 
 .reg-strength-bar.weak   { background: #e05252; }
 .reg-strength-bar.fair   { background: #f0a500; }
+.reg-strength-bar.medium { background: #f0a500; }
 .reg-strength-bar.good   { background: #3db88a; }
 .reg-strength-bar.strong { background: #1a9e8f; }
 
 .reg-strength-label { font-size: 11px; color: #9abcca; }
 .reg-strength-label.weak   { color: #e05252; }
 .reg-strength-label.fair   { color: #f0a500; }
+.reg-strength-label.medium { color: #f0a500; }
 .reg-strength-label.good   { color: #3db88a; }
 .reg-strength-label.strong { color: #1a9e8f; }
 

@@ -1,87 +1,43 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import axios from 'axios';
-import { Search, Filter, Video, Phone, MessageSquare, Calendar, Award, MapPin, CheckCircle, Clock } from 'lucide-react';
+import {
+  Search,
+  Filter,
+  Video,
+  Phone,
+  MessageSquare,
+  Calendar,
+  Award,
+  MapPin,
+  CheckCircle,
+  Clock,
+  Compass,
+  AlertCircle,
+  RefreshCw,
+  X,
+  Navigation,
+} from 'lucide-react';
 import './DoctorDirectory.css';
-
-// Default Mumbai Pincode & Reference Coordinates (Mumbai GPO)
-const DEFAULT_PINCODE = '400001';
-const DEFAULT_COORDS = { lat: 18.9388, lng: 72.8354 };
-
-// Haversine formula to compute distance between two geographical coordinates in kilometers
-function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
-  if (lat1 === undefined || lon1 === undefined || lat2 === undefined || lon2 === undefined) return 9999;
-  const R = 6371; // Earth radius in km
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return Math.round(R * c * 10) / 10;
-}
-
-// Fallback verified Indian Genetic Specialists with exact Mumbai coordinates
-const verifiedIndianDoctors = [
-  {
-    id: 'doc_in_1',
-    name: 'Dr. Rajesh Sharma',
-    qualification: 'MD, DM (Medical Genetics)',
-    specialty: 'Clinical Geneticist',
-    location: 'Mumbai, Maharashtra',
-    pincode: '400012',
-    lat: 19.0022,
-    lng: 72.8427,
-    registrationNumber: 'MCI-10001',
-    experience: '15+ years',
-    hospital: 'KEM Hospital, Parel',
-    languages: ['English', 'Hindi', 'Marathi'],
-    rating: 4.9,
-    status: 'Available',
-    fee: '₹1,500',
-    avatar: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=200&h=200&fit=crop',
-  },
-  {
-    id: 'doc_in_2',
-    name: 'Dr. Priya Nair',
-    qualification: 'MBBS, MSc (Genetic Counseling)',
-    specialty: 'Genetic Counselor',
-    location: 'Mumbai, Maharashtra',
-    pincode: '400012',
-    lat: 19.0041,
-    lng: 72.8432,
-    registrationNumber: 'MCI-10002',
-    experience: '10+ years',
-    hospital: 'Tata Memorial Hospital, Parel',
-    languages: ['English', 'Hindi', 'Marathi'],
-    rating: 4.8,
-    status: 'Available',
-    fee: '₹1,200',
-    avatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=200&h=200&fit=crop',
-  },
-  {
-    id: 'doc_in_3',
-    name: 'Dr. Ananya Deshmukh',
-    qualification: 'MD (Pediatrics), DM (Genetics)',
-    specialty: 'Prenatal Genetics',
-    location: 'Mumbai, Maharashtra',
-    pincode: '400053',
-    lat: 19.1311,
-    lng: 72.8252,
-    registrationNumber: 'MCI-10003',
-    experience: '12+ years',
-    hospital: 'Kokilaben Dhirubhai Ambani Hospital, Andheri West',
-    languages: ['English', 'Hindi', 'Marathi'],
-    rating: 4.9,
-    status: 'Available',
-    fee: '₹1,800',
-    avatar: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=200&h=200&fit=crop',
-  },
-];
+import {
+  calculateHaversineDistance,
+  resolveLocationInput,
+  filterAndRankDoctors,
+  verifiedIndianDoctors,
+  INDIAN_CITY_COORDINATES,
+} from '../../utils/doctorLocationFilter';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5050/api';
+
+const QUICK_CITIES = [
+  { name: 'Mumbai', pin: '400001' },
+  { name: 'New Delhi', pin: '110001' },
+  { name: 'Bangalore', pin: '560001' },
+  { name: 'Pune', pin: '411001' },
+  { name: 'Hyderabad', pin: '500001' },
+  { name: 'Chennai', pin: '600001' },
+  { name: 'Kolkata', pin: '700001' },
+  { name: 'Ahmedabad', pin: '380001' },
+];
 
 const DoctorDirectory = ({
   onStartConsultation,
@@ -90,182 +46,168 @@ const DoctorDirectory = ({
 }) => {
   const [doctors, setDoctors] = useState(verifiedIndianDoctors);
   const [isLoading, setIsLoading] = useState(false);
+  const [isResolvingLocation, setIsResolvingLocation] = useState(true);
   const [apiSource, setApiSource] = useState('Open Healthcare Network (India)');
+
+  // Search & Filter controls
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSpecialty, setSelectedSpecialty] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
 
-  // Pincode & Location State
-  const [userPincode, setUserPincode] = useState(DEFAULT_PINCODE);
-  const [userCoords, setUserCoords] = useState(DEFAULT_COORDS);
-  const [pincodeDistrict, setPincodeDistrict] = useState('Mumbai');
-  const [pincodeState, setPincodeState] = useState('Maharashtra');
-  const [locationStatus, setLocationStatus] = useState('Detecting your location…');
-  const [isEditingPincode, setIsEditingPincode] = useState(false);
-  const [pincodeInput, setPincodeInput] = useState('');
-  const [pincodeError, setPincodeError] = useState('');
+  // User location state
+  const [userPincode, setUserPincode] = useState('400001');
+  const [userCity, setUserCity] = useState('Mumbai');
+  const [userState, setUserState] = useState('Maharashtra');
+  const [userCoords, setUserCoords] = useState({ lat: 18.9388, lng: 72.8354 });
+  const [locationSource, setLocationSource] = useState('Detecting location…');
+  const [hasLocation, setHasLocation] = useState(true);
+  const [locationPermissionDenied, setLocationPermissionDenied] = useState(false);
 
-  // ── STEP 2: GET DISTRICT, STATE & COORDS FOR A GIVEN PINCODE ───────────────
-  const fetchCoordsAndDetailsForPincode = useCallback(async (pin) => {
-    let dist = 'Mumbai';
-    let st = 'Maharashtra';
-    let coords = { ...DEFAULT_COORDS };
+  // Manual location picker UI state
+  const [isEditingLocation, setIsEditingLocation] = useState(false);
+  const [locationInput, setLocationInput] = useState('');
+  const [locationError, setLocationError] = useState('');
 
-    // 1. Get District & State from Postal Pincode API
-    try {
-      const res = await axios.get(`https://api.postalpincode.in/pincode/${pin}`, { timeout: 3500 });
-      if (res.data && res.data[0] && res.data[0].Status === 'Success' && res.data[0].PostOffice?.length > 0) {
-        const po = res.data[0].PostOffice[0];
-        dist = po.District || po.Block || 'Mumbai';
-        st = po.State || 'Maharashtra';
-      }
-    } catch (err) {
-      console.warn('Postal pincode API note:', err.message);
-    }
-
-    // 2. Get Coordinates from OpenStreetMap Nominatim API
-    try {
-      const nomRes = await axios.get(
-        `https://nominatim.openstreetmap.org/search?postalcode=${pin}&country=India&format=json`,
-        { timeout: 3500 }
-      );
-      if (nomRes.data && nomRes.data.length > 0) {
-        coords = {
-          lat: parseFloat(nomRes.data[0].lat),
-          lng: parseFloat(nomRes.data[0].lon),
-        };
-      }
-    } catch (nomErr) {
-      console.warn('Nominatim coordinates lookup note:', nomErr.message);
-    }
-
-    setPincodeDistrict(dist);
-    setPincodeState(st);
-    setUserCoords(coords);
-    return { district: dist, state: st, coords };
-  }, []);
-
-  // ── STEP 1: AUTO-DETECT USER LOCATION ON PAGE LOAD ─────────────────────────
+  // ── STEP 1: AUTO-DETECT USER LOCATION ON COMPONENT MOUNT ──────────────────
   useEffect(() => {
     let isMounted = true;
 
-    const detectUserLocation = async () => {
-      setLocationStatus('Detecting your location…');
+    const detectLocation = async () => {
+      setIsResolvingLocation(true);
 
-      // Check 1: Patient Profile location check
+      // Check 1: Patient Profile location check (from intake form or localStorage)
       try {
         const storedProfile = JSON.parse(localStorage.getItem('geneGuardPatientProfile') || '{}');
-        const intakeLoc = patientProfile.location || storedProfile.location;
-        if (intakeLoc && /\d{6}/.test(intakeLoc)) {
-          const match = intakeLoc.match(/\d{6}/);
-          if (match && isMounted) {
-            const detectedPin = match[0];
-            setUserPincode(detectedPin);
-            await fetchCoordsAndDetailsForPincode(detectedPin);
-            setLocationStatus('Patient Intake Profile');
+        const rawLoc = patientProfile.location || storedProfile.location;
+
+        if (rawLoc && typeof rawLoc === 'string' && rawLoc.trim().length >= 2) {
+          const resolved = resolveLocationInput(rawLoc);
+          if (isMounted && resolved) {
+            setUserCity(resolved.city);
+            setUserState(resolved.state);
+            setUserPincode(resolved.pincode);
+            setUserCoords(resolved.coords);
+            setLocationSource('Patient Intake Profile');
+            setHasLocation(true);
+            setLocationPermissionDenied(false);
+            setIsResolvingLocation(false);
             return;
           }
         }
-      } catch (e) {
-        console.warn('Patient intake check note:', e.message);
+      } catch (err) {
+        console.warn('[DoctorDirectory] Intake location check error:', err.message);
       }
 
-      // Check 2: Geolocation API + Reverse Geocoding
-      if ('geolocation' in navigator) {
+      // Check 2: Browser Geolocation API
+      if (typeof navigator !== 'undefined' && 'geolocation' in navigator) {
         try {
           const position = await new Promise((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 4000 });
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              timeout: 4500,
+              enableHighAccuracy: true,
+            });
           });
 
           const { latitude, longitude } = position.coords;
-          let detectedPin = DEFAULT_PINCODE;
+          const detectedCoords = { lat: latitude, lng: longitude };
 
-          // Attempt 1: Reverse Geocode via postalpincode latlong API
-          try {
-            const pinRes = await axios.get(`https://api.postalpincode.in/latlong/${latitude}/${longitude}`, { timeout: 3000 });
-            if (pinRes.data && pinRes.data[0]?.PostOffice?.length > 0) {
-              const po = pinRes.data[0].PostOffice[0];
-              if (po.Pincode && /^\d{6}$/.test(po.Pincode)) {
-                detectedPin = po.Pincode;
-              }
-            }
-          } catch (e) {
-            // Attempt 2: Reverse Geocode via OpenStreetMap Nominatim
-            try {
-              const nomRes = await axios.get(
-                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
-                { timeout: 3000 }
-              );
-              if (nomRes.data?.address?.postcode && /^\d{6}$/.test(nomRes.data.address.postcode)) {
-                detectedPin = nomRes.data.address.postcode;
-              }
-            } catch (nomErr) {
-              console.warn('Reverse geocoding note:', nomErr.message);
+          // Find closest known Indian city hub based on detected GPS coordinates
+          let closestCity = 'Mumbai';
+          let closestState = 'Maharashtra';
+          let closestPin = '400001';
+          let minDistance = Infinity;
+
+          for (const info of Object.values(INDIAN_CITY_COORDINATES)) {
+            const dist = calculateHaversineDistance(latitude, longitude, info.lat, info.lng);
+            if (dist !== null && dist < minDistance) {
+              minDistance = dist;
+              closestCity = info.city;
+              closestState = info.state;
+              closestPin = info.pincode;
             }
           }
 
           if (isMounted) {
-            setUserPincode(detectedPin);
-            setUserCoords({ lat: latitude, lng: longitude });
-            await fetchCoordsAndDetailsForPincode(detectedPin);
-            setLocationStatus('Browser Geolocation');
+            setUserCoords(detectedCoords);
+            setUserCity(closestCity);
+            setUserState(closestState);
+            setUserPincode(closestPin);
+            setLocationSource('Browser Geolocation (GPS)');
+            setHasLocation(true);
+            setLocationPermissionDenied(false);
+            setIsResolvingLocation(false);
             return;
           }
         } catch (geoErr) {
-          console.log('Geolocation denied or timed out, using fallback:', geoErr.message);
+          console.warn('[DoctorDirectory] Geolocation unavailable or permission denied:', geoErr.message);
+          if (isMounted) {
+            setLocationPermissionDenied(true);
+            setLocationSource('Permission Denied — Showing All Doctors');
+            // Retain default coordinates for distance calculations without breaking
+            setUserCoords({ lat: 18.9388, lng: 72.8354 });
+            setUserCity('Mumbai');
+            setUserState('Maharashtra');
+            setUserPincode('400001');
+            setHasLocation(false);
+          }
+        }
+      } else {
+        if (isMounted) {
+          setLocationSource('Default Location (Mumbai)');
+          setHasLocation(true);
         }
       }
 
-      // Check 3: Default fallback (Mumbai 400001)
       if (isMounted) {
-        setUserPincode(DEFAULT_PINCODE);
-        setUserCoords(DEFAULT_COORDS);
-        await fetchCoordsAndDetailsForPincode(DEFAULT_PINCODE);
-        setLocationStatus('Default Location (Mumbai)');
+        setIsResolvingLocation(false);
       }
     };
 
-    detectUserLocation();
+    detectLocation();
 
     return () => {
       isMounted = false;
     };
-  }, [patientProfile.location, fetchCoordsAndDetailsForPincode]);
+  }, [patientProfile.location]);
 
-  // ── STEP 3: FETCH & DISTANCE-SORT DOCTORS FROM MONGO DB ───────────────────
-  const fetchDoctorsFromMongoDB = useCallback(async (pin, coords) => {
+  // ── STEP 2: FETCH DOCTORS FROM MONGO DB (WITH SEED FALLBACK) ───────────────
+  const fetchDoctorsFromMongoDB = useCallback(async (city, pin, coords) => {
     try {
       setIsLoading(true);
-      const res = await axios.get(
-        `${API_BASE_URL}/doctors?pincode=${pin}&userLat=${coords.lat}&userLng=${coords.lng}`
-      );
+      const queryParams = new URLSearchParams();
+      if (pin) queryParams.append('pincode', pin);
+      if (city) queryParams.append('location', city);
+      if (coords && coords.lat && coords.lng) {
+        queryParams.append('userLat', coords.lat);
+        queryParams.append('userLng', coords.lng);
+      }
 
-      if (res.data?.doctors && res.data.doctors.length > 0) {
+      const res = await axios.get(`${API_BASE_URL}/doctors?${queryParams.toString()}`, {
+        timeout: 4000,
+      });
+
+      if (res.data?.doctors && Array.isArray(res.data.doctors) && res.data.doctors.length > 0) {
         const mappedDocs = res.data.doctors.map((doc) => {
-          const docLat = doc.lat || 18.9388;
-          const docLng = doc.lng || 72.8354;
-          const dist = doc.distanceKm !== undefined
-            ? doc.distanceKm
-            : calculateHaversineDistance(coords.lat, coords.lng, docLat, docLng);
+          const docLat = doc.lat != null ? doc.lat : null;
+          const docLng = doc.lng != null ? doc.lng : null;
 
           return {
-            id: doc._id || doc.registrationNumber,
+            id: doc._id || doc.registrationNumber || `doc_${Math.random()}`,
             _id: doc._id,
             name: doc.name,
             qualification: doc.qualification || 'MD (Medical Genetics)',
-            specialty: doc.specialty || 'Medical Geneticist',
+            specialty: doc.specialty || 'Clinical Geneticist',
             location: doc.location || 'Mumbai, Maharashtra',
             pincode: doc.pincode || '400001',
             lat: docLat,
             lng: docLng,
-            distanceKm: dist,
             registrationNumber: doc.registrationNumber || 'REG-100',
             experience: doc.experience || '5+ years',
             hospital: doc.hospital || 'Specialty Genomics Hospital',
-            languages: doc.languages || ['English', 'Hindi', 'Marathi'],
-            rating: doc.rating || 4.8,
-            status: doc.status === 'approved' ? 'Available' : doc.status === 'pending' ? 'In Consultation' : 'Unavailable',
-            rawStatus: doc.status,
+            languages: Array.isArray(doc.languages) ? doc.languages : ['English', 'Hindi'],
+            rating: typeof doc.rating === 'number' ? doc.rating : 4.8,
+            status: doc.status === 'approved' ? 'Available' : doc.status === 'pending' ? 'In Consultation' : 'Available',
+            rawStatus: doc.status || 'approved',
             fee: doc.consultationFee || '₹1,500',
             avatar: doc.avatar || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=200&h=200&fit=crop',
             source: doc.source || 'manual',
@@ -276,26 +218,31 @@ const DoctorDirectory = ({
         setApiSource('GeneGuard MongoDB Genomics Registry');
       }
     } catch (err) {
-      console.warn('Fetch doctors API note:', err.message);
+      console.warn('[DoctorDirectory] Backend doctors API note, using verified in-memory specialists list:', err.message);
+      // Keep verifiedIndianDoctors as base data
     } finally {
       setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchDoctorsFromMongoDB(userPincode, userCoords);
-  }, [userPincode, userCoords, fetchDoctorsFromMongoDB]);
+    if (!isResolvingLocation) {
+      fetchDoctorsFromMongoDB(userCity, userPincode, userCoords);
+    }
+  }, [userCity, userPincode, userCoords, isResolvingLocation, fetchDoctorsFromMongoDB]);
 
+  // ── STEP 3: DYNAMIC SPECIALTIES LIST ───────────────────────────────────────
   const specialties = useMemo(() => {
     const set = new Set(['All']);
     doctors.forEach((d) => {
-      if (d.specialty.toLowerCase().includes('cancer') || d.specialty.toLowerCase().includes('oncology')) {
+      const spec = (d.specialty || '').toLowerCase();
+      if (spec.includes('cancer') || spec.includes('onco')) {
         set.add('Hereditary Cancer');
-      } else if (d.specialty.toLowerCase().includes('prenatal') || d.specialty.toLowerCase().includes('pediatric')) {
+      } else if (spec.includes('prenatal') || spec.includes('pediatric')) {
         set.add('Prenatal & Pediatric');
-      } else if (d.specialty.toLowerCase().includes('cardio') || d.specialty.toLowerCase().includes('metabolic')) {
+      } else if (spec.includes('cardio') || spec.includes('metabolic')) {
         set.add('Cardiovascular & Metabolic');
-      } else if (d.specialty.toLowerCase().includes('neuro')) {
+      } else if (spec.includes('neuro')) {
         set.add('Neurogenetics');
       } else {
         set.add('Clinical Geneticist');
@@ -304,55 +251,68 @@ const DoctorDirectory = ({
     return Array.from(set);
   }, [doctors]);
 
-  // ── STEP 4: DISTANCE-SORTED FILTERING & RADIUS EXPANSION ─────────────────
-  const filteredDoctors = useMemo(() => {
-    let list = doctors.filter((doc) => {
-      if (doc.rawStatus === 'rejected') return false;
-
-      const matchSearch =
-        doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        doc.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        doc.specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        doc.hospital.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (doc.pincode && doc.pincode.includes(searchTerm));
-
-      const matchSpecialty =
-        selectedSpecialty === 'All' ||
-        doc.specialty.toLowerCase().includes(selectedSpecialty.toLowerCase().split(' ')[0]);
-
-      const matchStatus =
-        statusFilter === 'All' || doc.status.toLowerCase() === statusFilter.toLowerCase();
-
-      return matchSearch && matchSpecialty && matchStatus;
+  // ── STEP 4: DISTANCE RANKING & PROGRESSIVE RADIUS EXPANSION ENGINE ────────
+  const filterOutput = useMemo(() => {
+    return filterAndRankDoctors({
+      doctors,
+      userCoords,
+      userCity,
+      userState,
+      userPincode,
+      searchTerm,
+      selectedSpecialty,
+      statusFilter,
+      localRadiusKm: 50,
+      regionalRadiusKm: 300,
+      hasLocation,
     });
+  }, [doctors, userCoords, userCity, userState, userPincode, searchTerm, selectedSpecialty, statusFilter, hasLocation]);
 
-    // Ensure strict ascending distance sorting
-    list.sort((a, b) => (a.distanceKm || 0) - (b.distanceKm || 0));
+  const filteredDoctors = filterOutput.doctors;
+  const matchMode = filterOutput.matchMode;
+  const fallbackNotice = filterOutput.fallbackNotice;
 
-    return list;
-  }, [doctors, searchTerm, selectedSpecialty, statusFilter]);
+  // ── MANUAL LOCATION PICKER HANDLERS ───────────────────────────────────────
+  const handleApplyLocation = (inputVal) => {
+    setLocationError('');
+    const cleanInput = (inputVal || locationInput).trim();
 
-  // ── MANUAL PINCODE OVERRIDE HANDLER ──────────────────────────────────────
-  const handleApplyCustomPincode = async () => {
-    setPincodeError('');
-    const cleanPin = pincodeInput.trim();
-
-    if (!/^\d{6}$/.test(cleanPin)) {
-      setPincodeError('Please enter a valid 6-digit pincode (e.g. 400012)');
+    if (!cleanInput) {
+      setLocationError('Please enter a city name (e.g. Pune) or 6-digit pincode (e.g. 411001)');
       return;
     }
 
-    setUserPincode(cleanPin);
-    setLocationStatus('User Specified');
-    setIsEditingPincode(false);
-    const details = await fetchCoordsAndDetailsForPincode(cleanPin);
-    await fetchDoctorsFromMongoDB(cleanPin, details.coords);
+    const resolved = resolveLocationInput(cleanInput);
+    setUserCity(resolved.city);
+    setUserState(resolved.state);
+    setUserPincode(resolved.pincode);
+    setUserCoords(resolved.coords);
+    setLocationSource('User Specified');
+    setHasLocation(true);
+    setLocationPermissionDenied(false);
+    setIsEditingLocation(false);
+    setLocationInput('');
+
+    fetchDoctorsFromMongoDB(resolved.city, resolved.pincode, resolved.coords);
   };
 
-  const handleClearLocation = () => {
-    setPincodeInput('');
-    setPincodeError('');
-    setIsEditingPincode(true);
+  const handleQuickCitySelect = (cityObj) => {
+    handleApplyLocation(cityObj.name);
+  };
+
+  const handleResetLocation = () => {
+    setSearchTerm('');
+    setSelectedSpecialty('All');
+    setStatusFilter('All');
+    const defaultLoc = resolveLocationInput('Mumbai');
+    setUserCity(defaultLoc.city);
+    setUserState(defaultLoc.state);
+    setUserPincode(defaultLoc.pincode);
+    setUserCoords(defaultLoc.coords);
+    setLocationSource('Default Location (Mumbai)');
+    setHasLocation(true);
+    setLocationPermissionDenied(false);
+    setIsEditingLocation(false);
   };
 
   return (
@@ -363,7 +323,7 @@ const DoctorDirectory = ({
           <span className="directory-badge">Verified Genomics Network</span>
           <h2>Connect with Certified Genetic Specialists</h2>
           <p>
-            Real-time directory powered by {apiSource}. Distance-sorted nearest doctor discovery with direct intake form integration.
+            Real-time directory powered by {apiSource}. Hyper-local specialist matching with automatic regional distance expansion and direct consultation booking.
           </p>
         </div>
         <div className="directory-stats-chip">
@@ -372,63 +332,126 @@ const DoctorDirectory = ({
         </div>
       </div>
 
-      {/* ─── STEP 4: Pincode & Distance Location Filter Banner ─── */}
+      {/* ─── Location Status & Manual Location Picker ─── */}
       <div className="user-location-banner">
         <div className="location-badge-pill">
           <MapPin size={18} />
           <span>
-            Showing doctors near <strong>{userPincode}</strong> ({pincodeDistrict}, {pincodeState})
+            {hasLocation ? (
+              <>
+                Showing specialists near <strong>{userCity}</strong> {userPincode ? `(${userPincode})` : ''}
+                {userState && `, ${userState}`}
+              </>
+            ) : (
+              <>Location access not set — Showing all specialists across India</>
+            )}
           </span>
-          <span className="location-source-tag">[{locationStatus}]</span>
+          <span className="location-source-tag">[{locationSource}]</span>
         </div>
 
-        {isEditingPincode ? (
+        {isEditingLocation ? (
           <div className="location-override-box">
             <input
               type="text"
-              className={`location-override-input ${pincodeError ? 'input-err' : ''}`}
-              placeholder="Enter 6-digit Pincode (e.g. 400050)..."
-              value={pincodeInput}
+              className={`location-override-input ${locationError ? 'input-err' : ''}`}
+              placeholder="Enter City (e.g. Pune, Bangalore) or 6-digit Pincode..."
+              value={locationInput}
               onChange={(e) => {
-                setPincodeInput(e.target.value);
-                if (pincodeError) setPincodeError('');
+                setLocationInput(e.target.value);
+                if (locationError) setLocationError('');
               }}
-              onKeyDown={(e) => e.key === 'Enter' && handleApplyCustomPincode()}
-              maxLength={6}
+              onKeyDown={(e) => e.key === 'Enter' && handleApplyLocation()}
               autoFocus
             />
-            <button className="location-save-btn" onClick={handleApplyCustomPincode}>
-              Apply Pincode
+            <button className="location-save-btn" onClick={() => handleApplyLocation()}>
+              Apply
             </button>
             <button
               className="location-cancel-btn"
               onClick={() => {
-                setIsEditingPincode(false);
-                setPincodeError('');
+                setIsEditingLocation(false);
+                setLocationError('');
               }}
             >
               Cancel
             </button>
           </div>
         ) : (
-          <button className="location-change-btn" onClick={handleClearLocation}>
-            Change Location
+          <button className="location-change-btn" onClick={() => setIsEditingLocation(true)}>
+            <Navigation size={14} />
+            <span>Change Location</span>
           </button>
         )}
 
-        {pincodeError && <div className="pincode-error-msg">{pincodeError}</div>}
+        {locationError && <div className="pincode-error-msg">{locationError}</div>}
       </div>
 
-      {/* ─── Controls Bar (Search + Filters) ─── */}
+      {/* ─── Location Permission Denied Alert & Quick City Selector ─── */}
+      {locationPermissionDenied && (
+        <div className="location-denied-alert">
+          <div className="denied-alert-head">
+            <AlertCircle size={18} className="denied-icon" />
+            <div className="denied-text">
+              <strong>Location Access Was Not Granted</strong>
+              <p>Select your city below or enter your location above to discover genetic counselors closest to you:</p>
+            </div>
+          </div>
+          <div className="quick-cities-row">
+            {QUICK_CITIES.map((city) => (
+              <button
+                key={city.name}
+                className={`quick-city-chip ${userCity.toLowerCase() === city.name.toLowerCase() ? 'active' : ''}`}
+                onClick={() => handleQuickCitySelect(city)}
+              >
+                {city.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ─── Fallback & Radius Mode Explanation Banner ─── */}
+      {!isResolvingLocation && fallbackNotice && (
+        <div className={`location-feedback-banner status-${matchMode}`}>
+          {matchMode === 'local' ? (
+            <CheckCircle size={18} className="feedback-icon" />
+          ) : matchMode === 'regional_fallback' ? (
+            <Compass size={18} className="feedback-icon" />
+          ) : matchMode === 'nationwide_fallback' ? (
+            <AlertCircle size={18} className="feedback-icon" />
+          ) : (
+            <MapPin size={18} className="feedback-icon" />
+          )}
+          <div className="feedback-content">
+            <span className="feedback-tag">
+              {matchMode === 'local'
+                ? 'Hyper-Local Match'
+                : matchMode === 'regional_fallback'
+                ? 'Regional Radius Expansion'
+                : matchMode === 'nationwide_fallback'
+                ? 'Nationwide Nearest Fallback'
+                : 'All Verified Specialists'}
+            </span>
+            <p className="feedback-msg">{fallbackNotice}</p>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Controls Bar (Search + Specialty + Status Filters) ─── */}
       <div className="directory-controls-bar">
         <div className="directory-search-input-wrap">
           <Search size={18} className="search-icon" />
           <input
             type="text"
-            placeholder="Search by doctor name, pincode (400012), specialty, hospital..."
+            placeholder="Search by doctor name, specialty, hospital, city, or pincode..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
+          {searchTerm && (
+            <button className="clear-search-btn" onClick={() => setSearchTerm('')} title="Clear search">
+              <X size={15} />
+            </button>
+          )}
         </div>
 
         <div className="directory-filters-row">
@@ -437,6 +460,7 @@ const DoctorDirectory = ({
             <select
               value={selectedSpecialty}
               onChange={(e) => setSelectedSpecialty(e.target.value)}
+              aria-label="Filter by Specialty"
             >
               {specialties.map((s) => (
                 <option key={s} value={s}>{s}</option>
@@ -449,6 +473,7 @@ const DoctorDirectory = ({
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
+              aria-label="Filter by Availability"
             >
               <option value="All">All Statuses</option>
               <option value="Available">Available Now</option>
@@ -458,43 +483,47 @@ const DoctorDirectory = ({
         </div>
       </div>
 
-      {/* ─── Doctor Cards Grid (STEP 4) ─── */}
-      {isLoading && doctors.length === 0 ? (
+      {/* ─── Doctor Cards Grid / Loading State ─── */}
+      {isResolvingLocation || (isLoading && doctors.length === 0) ? (
         <div className="directory-loading">
           <div className="directory-spinner"></div>
-          <p>Calculating distance to nearby genetic specialists...</p>
+          <p>Finding verified genetic specialists near {userCity || 'you'}...</p>
+          <span className="loading-subtext">Calculating real-time travel distance &amp; scheduling availability</span>
         </div>
       ) : filteredDoctors.length === 0 ? (
         <div className="directory-empty">
-          <p>No doctors found near this location. Try a different pincode.</p>
-          <button
-            className="directory-reset-btn"
-            onClick={() => {
-              setSearchTerm('');
-              setSelectedSpecialty('All');
-              setStatusFilter('All');
-              setUserPincode(DEFAULT_PINCODE);
-              setUserCoords(DEFAULT_COORDS);
-              fetchCoordsAndDetailsForPincode(DEFAULT_PINCODE);
-            }}
-          >
-            Reset Location & Filters
+          <AlertCircle size={40} className="empty-icon" />
+          <h3>No doctors match your filter criteria</h3>
+          <p>Try clearing your search query or selecting a different clinical specialty.</p>
+          <button className="directory-reset-btn" onClick={handleResetLocation}>
+            <RefreshCw size={15} />
+            <span>Reset Filters &amp; Location</span>
           </button>
         </div>
       ) : (
         <div className="doctors-grid">
           {filteredDoctors.map((doctor) => {
             const isOnline = doctor.status === 'Available';
-            const distance = doctor.distanceKm !== undefined ? doctor.distanceKm : 0;
-            const isNearby = distance < 5;
+            const hasDist = doctor.distanceKm !== null && doctor.distanceKm !== undefined;
+            const isNearby = hasDist && doctor.distanceKm <= 50;
 
             return (
               <div key={doctor.id} className={`doctor-card ${isOnline ? 'is-available' : 'is-busy'}`}>
-                {/* Distance Badge Pill (STEP 4) */}
-                <div className={`doctor-distance-badge ${isNearby ? 'is-closest' : ''}`}>
-                  <MapPin size={12} />
-                  <span>{distance} km away</span>
-                </div>
+                {/* Distance Badge Pill */}
+                {hasDist ? (
+                  <div
+                    className={`doctor-distance-badge ${isNearby ? 'is-closest' : ''}`}
+                    title={isNearby ? 'Local Specialist serving your immediate area' : 'Distance from your location'}
+                  >
+                    <MapPin size={12} />
+                    <span>{isNearby ? `Nearby • ${doctor.distanceKm} km` : `${doctor.distanceKm} km away`}</span>
+                  </div>
+                ) : (
+                  <div className="doctor-distance-badge is-tele" title="Available for real-time video/audio teleconsultation">
+                    <Video size={12} />
+                    <span>Teleconsultation • Online</span>
+                  </div>
+                )}
 
                 {/* Doctor Card Top */}
                 <div className="doctor-card-top">
@@ -544,7 +573,7 @@ const DoctorDirectory = ({
                 {/* Languages & Fee */}
                 <div className="doctor-tags-row">
                   <div className="lang-tags">
-                    {doctor.languages.map((lang) => (
+                    {(doctor.languages || ['English', 'Hindi']).map((lang) => (
                       <span key={lang} className="lang-tag">{lang}</span>
                     ))}
                   </div>
@@ -555,7 +584,7 @@ const DoctorDirectory = ({
                 <div className="doctor-actions-row">
                   <button
                     className="action-btn chat-btn"
-                    title="Start Instant Real-Time Chat"
+                    title="Start Encrypted Chat Consultation"
                     onClick={() => onStartConsultation(doctor, 'chat')}
                   >
                     <MessageSquare size={16} />
@@ -564,7 +593,7 @@ const DoctorDirectory = ({
 
                   <button
                     className="action-btn audio-btn"
-                    title="Start Audio Consultation"
+                    title="Start Real-Time Audio Consultation"
                     onClick={() => onStartConsultation(doctor, 'audio')}
                   >
                     <Phone size={16} />
@@ -573,7 +602,7 @@ const DoctorDirectory = ({
 
                   <button
                     className="action-btn video-btn"
-                    title="Start HD Video Call"
+                    title="Start HD Video Consultation"
                     onClick={() => onStartConsultation(doctor, 'video')}
                   >
                     <Video size={16} />
@@ -582,7 +611,7 @@ const DoctorDirectory = ({
 
                   <button
                     className="action-btn book-btn"
-                    title="Schedule an Appointment"
+                    title="Schedule Appointment Slot"
                     onClick={() => onBookAppointment(doctor)}
                   >
                     <Calendar size={16} />

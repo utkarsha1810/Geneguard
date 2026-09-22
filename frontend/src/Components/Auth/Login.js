@@ -180,6 +180,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5050';
 
 const Login = () => {
   const navigate = useNavigate();
+  const formRef = useRef(null);
   const [language, setLanguage] = useState('en');
   const [role, setRole] = useState('admin');
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -189,38 +190,77 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loginSuccess, setLoginSuccess] = useState(false);
 
+  const validateField = (name, value) => {
+    if (role === 'guest') return '';
+    
+    if (name === 'email') {
+      if (!value) return 'Email is required';
+      if (value.includes(' ')) return 'Email cannot contain spaces';
+      if (value.length > 100) return 'Email must be under 100 characters';
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Enter a valid email address';
+    }
+    
+    if (name === 'password') {
+      if (!value) return 'Password is required';
+      if (value.length < 6) return 'Password must be at least 6 characters';
+    }
+    
+    return '';
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const finalValue = name === 'email' ? value.trim() : value;
+    setFormData(prev => ({ ...prev, [name]: finalValue }));
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
     if (globalError) setGlobalError('');
   };
 
-  const validate = () => {
-    const errs = {};
-    // Guests can continue without credentials
-    if (role !== 'guest') {
-      if (!formData.email.trim()) {
-        errs.email = 'Email is required';
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-        errs.email = 'Enter a valid email address';
-      }
-      if (!formData.password) {
-        errs.password = 'Password is required';
-      } else if (formData.password.length < 6) {
-        errs.password = 'Password must be at least 6 characters';
-      }
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    const error = validateField(name, value);
+    if (error) {
+      setErrors(prev => ({ ...prev, [name]: error }));
+    } else {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
     }
+  };
+
+  const validate = () => {
+    if (role === 'guest') return {};
+    const errs = {};
+    const emailErr = validateField('email', formData.email);
+    if (emailErr) errs.email = emailErr;
+    
+    const pwdErr = validateField('password', formData.password);
+    if (pwdErr) errs.password = pwdErr;
+    
     return errs;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setFormData(prev => ({ ...prev, email: prev.email.trim() }));
+    
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
+      setTimeout(() => {
+        if (formRef.current) {
+          const firstError = formRef.current.querySelector('.input-error');
+          if (firstError) {
+            firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            firstError.focus();
+          }
+        }
+      }, 0);
       return;
     }
+    
     setIsLoading(true);
     setGlobalError('');
     try {
@@ -343,7 +383,7 @@ const Login = () => {
               </div>
             )}
 
-            <form className="login-form" onSubmit={handleSubmit} noValidate>
+            <form className="login-form" onSubmit={handleSubmit} noValidate ref={formRef}>
 
               {role === 'guest' && (
                 <div className="guest-note">
@@ -366,6 +406,7 @@ const Login = () => {
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
+                      onBlur={handleBlur}
                       className={errors.email ? 'input-error' : ''}
                       autoComplete="email"
                     />
@@ -390,6 +431,7 @@ const Login = () => {
                       name="password"
                       value={formData.password}
                       onChange={handleChange}
+                      onBlur={handleBlur}
                       className={errors.password ? 'input-error' : ''}
                       autoComplete="current-password"
                     />
