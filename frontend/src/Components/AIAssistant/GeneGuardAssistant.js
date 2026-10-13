@@ -16,7 +16,7 @@ console.log('[GeneGuard] Gemini Key loaded:', GEMINI_API_KEY ? `YES (${GEMINI_AP
 console.log('[GeneGuard] Primary Model:', MODEL);
 
 const SYSTEM_PROMPT =
-  "You are a helpful conversational AI assistant for GeneGuard, a genetic health platform. Answer whatever the user asks naturally and directly. If they say hi, say hi back casually. If they ask a general question, answer it normally. If they ask about genetics, DNA, or health, give a clear helpful answer. Only mention GeneGuard pages when the user asks about the website or needs navigation help. GeneGuard pages: Home(/), Learn Genetics(/learn-genetics), Genetic Disorders(/genetic-disorders), DNA Testing(/dna), DNA Agents(/dna/agents), Patient Intake(/dna/patient-intake), Genetic Assessment AI(/genetic-assessment), Counselling(/counselling), Login(/login), Signup(/register), About(/about). If the user writes or speaks in Hindi (Devanagari script), respond entirely in Hindi using proper Devanagari script. If they write or speak in English, respond in English. Always match the language the user is using. Keep responses concise and natural.";
+  "You are a helpful conversational AI assistant for GeneGuard, a genetic health platform. Answer whatever the user asks naturally and directly. If they say hi, say hi back casually. If they ask a general question, answer it normally. If they ask about genetics, DNA, or health, give a clear helpful answer. Only mention GeneGuard pages when the user asks about the website or needs navigation help. GeneGuard pages: Home(/), Learn Genetics(/learn-genetics), Genetic Disorders(/genetic-disorders), DNA Testing(/dna), DNA Agents(/dna/agents), Patient Intake(/dna/patient-intake), Genetic Assessment AI(/genetic-assessment), Counselling(/counselling), Login(/login), Signup(/register), About(/about). If the user writes or speaks in Hindi (Devanagari script), respond entirely in Hindi using proper Devanagari script. If they write or speak in English, respond in English. Always match the language the user is using. Keep responses concise and complete. Never cut off mid-sentence. If the answer is short, keep it short. If detail is needed, give it fully. Always finish your thought completely.";
 
 const WELCOME_MESSAGE = {
   id: 'welcome',
@@ -42,6 +42,18 @@ const formatTime = (d) => {
 
 /** Simple Hindi detector — checks for Devanagari characters */
 const isHindi = (text) => /[\u0900-\u097F]/.test(text);
+
+/** Clean markdown tokens so chat display and speech stay natural and never show ** or * */
+const cleanMarkdown = (text) => {
+  if (!text) return '';
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/#{1,6}\s/g, '')
+    .replace(/`(.*?)`/g, '$1')
+    .replace(/\*+/g, '')
+    .trim();
+};
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Component
@@ -114,18 +126,39 @@ const GeneGuardAssistant = () => {
     if (isOpen) setTimeout(() => inputRef.current?.focus(), 300);
   }, [isOpen]);
 
-  // ── Cleanup speech synthesis on unmount ──────────────────────────────────
+  // ── Setup Speech Synthesis Voices ─────────────────────────────────────────
+  const [voices, setVoices] = useState([]);
+
   useEffect(() => {
-    return () => synthRef.current?.cancel();
+    if (!window.speechSynthesis) return;
+
+    const loadVoices = () => {
+      const v = window.speechSynthesis.getVoices();
+      if (v && v.length > 0) {
+        setVoices(v);
+      }
+    };
+
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+
+    return () => {
+      synthRef.current?.cancel();
+      if (window.speechSynthesis) {
+        window.speechSynthesis.onvoiceschanged = null;
+      }
+    };
   }, []);
 
-  // ── Send message to Gemini ───────────────────────────────────────────────
-  const sendMessage = useCallback(
-    async (userText) => {
-      // Build new history with user message
+  // ── Send message to Gemini with Streaming ─────────────────────────────────
+  const sendMessageStream = useCallback(
+    async (userText, onChunk) => {
+      // STEP 2 & 3: Raw string without manual encoding or escaping
+      const userMessage = userText;
+      const recentHistory = conversationHistory.slice(-6);
       const newHistory = [
-        ...conversationHistory,
-        { role: 'user', parts: [{ text: userText }] },
+        ...recentHistory,
+        { role: 'user', parts: [{ text: userMessage }] },
       ];
 
       const keysToTry = [
@@ -137,48 +170,118 @@ const GeneGuardAssistant = () => {
       ].filter(Boolean);
 
       const uniqueKeys = Array.from(new Set(keysToTry));
-      const modelsToTry = [MODEL, 'gemini-3.8-flash', 'gemini-flash-latest'];
+      const modelsToTry = ['gemini-3.5-flash-lite', MODEL, 'gemini-3.8-flash', 'gemini-flash-latest'];
 
       let lastError = null;
-      let aiText = null;
+      let streamedFullText = '';
 
       for (const key of uniqueKeys) {
-        const isAuthKey = key.startsWith('AQ.');
         const headers = {
           'Content-Type': 'application/json',
-          ...(isAuthKey
-            ? { Authorization: `Bearer ${key}` }
-            : { 'x-goog-api-key': key }),
+          'x-goog-api-key': key,
         };
 
         for (const modelName of modelsToTry) {
-          const url = isAuthKey
-            ? `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`
-            : `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${key}`;
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:streamGenerateContent?key=${key}&alt=sse`;
 
           try {
-            console.log(`[GeneGuard] Calling ${modelName} with ${isAuthKey ? 'Bearer Auth Key' : 'API Key'} (${key.substring(0, 8)}...)`);
+            console.log(`[GeneGuard] Streaming ${modelName} with key (${key.substring(0, 8)}...)`);
+            // STEP 1: Diagnostic logs
+            console.log('Sending message:', JSON.stringify(userMessage));
+            console.log('History being sent:', JSON.stringify(recentHistory));
+
+            // STEP 2: JSON.stringify handles Unicode automatically without manual encoding
             const response = await fetch(url, {
               method: 'POST',
               headers,
               body: JSON.stringify({
                 system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
                 contents: newHistory,
+                generationConfig: {
+                  temperature: 0.7,
+                  stopSequences: [],
+                },
               }),
             });
 
-            if (response.ok) {
-              const data = await response.json();
-              aiText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-              if (aiText) break;
+            if (response.ok && response.body) {
+              const reader = response.body.getReader();
+              const decoder = new TextDecoder();
+              let fullText = '';
+              let buffer = '';
+
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                buffer += chunk;
+
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                  const trimmed = line.trim();
+                  if (!trimmed) continue;
+
+                  let chunkData = '';
+                  if (trimmed.startsWith('data:')) {
+                    chunkData = trimmed.slice(5).trim();
+                  } else if (!trimmed.startsWith(':')) {
+                    chunkData = trimmed.replace(/^\[|,|\]$/g, '').trim();
+                  }
+
+                  if (!chunkData || chunkData === '[DONE]') continue;
+
+                  // STEP 4: Robust try/catch around JSON chunk parse
+                  try {
+                    const parsed = JSON.parse(chunkData);
+                    const textChunk = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (textChunk) {
+                      fullText += textChunk;
+                      onChunk(textChunk, fullText);
+                    }
+                  } catch (e) {
+                    // skip malformed chunk, continue reading
+                    continue;
+                  }
+                }
+              }
+
+              // Process any trailing line in buffer
+              if (buffer.trim()) {
+                const trimmed = buffer.trim();
+                let chunkData = '';
+                if (trimmed.startsWith('data:')) {
+                  chunkData = trimmed.slice(5).trim();
+                } else if (!trimmed.startsWith(':')) {
+                  chunkData = trimmed.replace(/^\[|,|\]$/g, '').trim();
+                }
+
+                if (chunkData && chunkData !== '[DONE]') {
+                  try {
+                    const parsed = JSON.parse(chunkData);
+                    const textChunk = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (textChunk) {
+                      fullText += textChunk;
+                      onChunk(textChunk, fullText);
+                    }
+                  } catch (e) {
+                    // skip malformed chunk
+                  }
+                }
+              }
+
+              if (fullText.trim()) {
+                streamedFullText = fullText;
+                break;
+              }
             } else {
               const errData = await response.json().catch(() => ({}));
               lastError = errData?.error?.message || `HTTP ${response.status}`;
-              console.warn(`[GeneGuard] ${modelName} response status ${response.status}:`, lastError);
-              // If model is discontinued or not found (404), try next model immediately
+              console.warn(`[GeneGuard] ${modelName} stream response status ${response.status}:`, lastError);
               if (response.status === 404) continue;
-              // If key is unauthenticated (401) or forbidden/leaked (403), switch key
-              if (response.status === 401 || response.status === 403) break;
+              if (response.status === 401 || response.status === 403 || response.status === 429 || response.status === 503) break;
             }
           } catch (fetchErr) {
             lastError = fetchErr.message;
@@ -186,25 +289,27 @@ const GeneGuardAssistant = () => {
           }
         }
 
-        if (aiText) break;
+        if (streamedFullText) break;
       }
 
-      if (!aiText) {
-        throw new Error(lastError || 'All Gemini API endpoints failed');
+      if (!streamedFullText) {
+        throw new Error(lastError || 'All Gemini streaming endpoints failed');
       }
 
-      // Persist conversation history
-      setConversationHistory([
-        ...newHistory,
-        { role: 'model', parts: [{ text: aiText }] },
+      // Persist to conversation history
+      const cleanFinal = cleanMarkdown(streamedFullText);
+      setConversationHistory((prev) => [
+        ...prev.slice(-10),
+        { role: 'user', parts: [{ text: userText }] },
+        { role: 'model', parts: [{ text: cleanFinal }] },
       ]);
 
-      return aiText;
+      return cleanFinal;
     },
     [conversationHistory]
   );
 
-  // ── Speak text aloud ─────────────────────────────────────────────────────
+  // ── Speak text aloud with Female Voice Selection ──────────────────────────
   const speakText = useCallback(
     (text, msgId) => {
       if (!synthRef.current || isMuted) return;
@@ -212,30 +317,38 @@ const GeneGuardAssistant = () => {
       synthRef.current.cancel();
 
       // Clean markdown/route tokens for cleaner speech
-      const clean = text
+      const clean = cleanMarkdown(text)
         .replace(/\([^)]*\)/g, '')
-        .replace(/[*_#`~[\]]/g, '')
         .replace(/\n+/g, '. ')
         .trim();
 
+      if (!clean) return;
+
       const utterance = new SpeechSynthesisUtterance(clean);
-      utterance.rate = 0.9;
-      utterance.pitch = 1.0;
+      utterance.rate = 0.95;
+      utterance.pitch = 1.05; // Slightly higher pitch for natural female tone
       utterance.volume = 1.0;
 
-      // Pick voice based on language
-      const voices = synthRef.current.getVoices();
-      if (isHindi(text)) {
-        utterance.lang = 'hi-IN';
-        const hindiVoice = voices.find((v) => v.lang === 'hi-IN');
-        if (hindiVoice) utterance.voice = hindiVoice;
-      } else {
-        utterance.lang = 'en-IN';
-        const indianVoice =
-          voices.find((v) => v.lang === 'en-IN') ||
-          voices.find((v) => v.lang.includes('en'));
-        if (indianVoice) utterance.voice = indianVoice;
-      }
+      // FIX 5: Female voice for both English and Hindi
+      const currentVoices = synthRef.current.getVoices() || voices;
+      const hindiMode = isHindi(clean);
+
+      // For English (en-IN):
+      const englishVoice =
+        currentVoices.find((v) => v.lang === 'en-IN' && v.name.toLowerCase().includes('female')) ||
+        currentVoices.find((v) => v.lang === 'en-IN' && (v.name.includes('Raveena') || v.name.includes('Veena') || v.name.includes('Priya'))) ||
+        currentVoices.find((v) => v.lang === 'en-IN') ||
+        currentVoices.find((v) => v.lang.startsWith('en') && v.name.toLowerCase().includes('female')) ||
+        currentVoices.find((v) => v.lang.startsWith('en') && (v.name.includes('Samantha') || v.name.includes('Victoria') || v.name.includes('Karen')));
+
+      // For Hindi (hi-IN):
+      const hindiVoice =
+        currentVoices.find((v) => v.lang === 'hi-IN' && v.name.toLowerCase().includes('female')) ||
+        currentVoices.find((v) => v.lang === 'hi-IN' && (v.name.includes('Lekha') || v.name.includes('Kalpana') || v.name.includes('Heera'))) ||
+        currentVoices.find((v) => v.lang === 'hi-IN');
+
+      utterance.voice = hindiMode ? hindiVoice : englishVoice;
+      utterance.lang = hindiMode ? 'hi-IN' : 'en-IN';
 
       utterance.onstart = () => setSpeakingMsgId(msgId);
       utterance.onend = () => setSpeakingMsgId(null);
@@ -243,10 +356,10 @@ const GeneGuardAssistant = () => {
 
       synthRef.current.speak(utterance);
     },
-    [isMuted]
+    [isMuted, voices]
   );
 
-  // ── Handle send ──────────────────────────────────────────────────────────
+  // ── Handle send with Instant Typing Indicator & Streamed Display ──────────
   const handleSend = useCallback(
     async (overrideText) => {
       const text = (overrideText || input).trim();
@@ -263,39 +376,89 @@ const GeneGuardAssistant = () => {
         timestamp: new Date(),
       };
 
+      const aiMsgId = Date.now() + 1;
+      let hasReceivedFirstChunk = false;
+
       setInput('');
       setShowChips(false);
+
+      // FIX 4: Show typing dots as soon as user hits send, before API call even starts
       setIsLoading(true);
       setMessages((prev) => [...prev, userMsg]);
 
       try {
-        const aiText = await sendMessage(text);
-        const aiMsg = {
-          id: Date.now() + 1,
-          role: 'assistant',
-          text: aiText,
-          timestamp: new Date(),
-        };
-        setMessages((prev) => [...prev, aiMsg]);
+        const fullAiText = await sendMessageStream(text, (chunk, fullTextSoFar) => {
+          // FIX 3: Strip markdown from streamed chunks on every stream update
+          const cleanText = cleanMarkdown(fullTextSoFar);
 
-        // Auto-speak unless muted
-        if (!isMuted) {
-          setTimeout(() => speakText(aiText, aiMsg.id), 200);
+          // FIX 4: Remove dots as soon as first chunk arrives
+          if (!hasReceivedFirstChunk) {
+            hasReceivedFirstChunk = true;
+            setIsLoading(false);
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: aiMsgId,
+                role: 'assistant',
+                text: cleanText,
+                timestamp: new Date(),
+              },
+            ]);
+          } else {
+            // Update message state on each chunk so text appears word by word
+            setMessages((prev) =>
+              prev.map((m) => (m.id === aiMsgId ? { ...m, text: cleanText } : m))
+            );
+          }
+        });
+
+        const finalClean = cleanMarkdown(fullAiText);
+
+        // Ensure loading is false
+        setIsLoading(false);
+
+        // Fallback if entire response arrived without interim chunk
+        if (!hasReceivedFirstChunk && finalClean) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: aiMsgId,
+              role: 'assistant',
+              text: finalClean,
+              timestamp: new Date(),
+            },
+          ]);
+        } else if (finalClean) {
+          setMessages((prev) =>
+            prev.map((m) => (m.id === aiMsgId ? { ...m, text: finalClean } : m))
+          );
+        }
+
+        // Auto-speak in female voice unless muted (pass cleanText, never raw text)
+        if (!isMuted && finalClean) {
+          setTimeout(() => speakText(finalClean, aiMsgId), 100);
         }
       } catch (err) {
         console.error('[GeneGuardAssistant] Error:', err);
+        setIsLoading(false);
         const errMsg = {
-          id: Date.now() + 1,
+          id: aiMsgId,
           role: 'assistant',
           text: "Sorry, I couldn't process that right now. Please try again!",
           timestamp: new Date(),
         };
-        setMessages((prev) => [...prev, errMsg]);
+        setMessages((prev) => {
+          const exists = prev.some((m) => m.id === aiMsgId);
+          if (exists) {
+            return prev.map((m) => (m.id === aiMsgId ? errMsg : m));
+          }
+          return [...prev, errMsg];
+        });
       } finally {
         setIsLoading(false);
       }
     },
-    [input, isLoading, sendMessage, speakText, isMuted]
+    [input, isLoading, sendMessageStream, speakText, isMuted]
   );
 
   // ── Toggle microphone ───────────────────────────────────────────────────
