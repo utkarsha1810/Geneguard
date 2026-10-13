@@ -467,6 +467,47 @@
   height: 17px;
 }
 
+/* ── Language Toggle Button ──────────────────────────────────────────────── */
+.gg-lang-btn {
+  min-width: 36px;
+  height: 36px;
+  border-radius: 18px;
+  border: 1.5px solid var(--gg-gray-300);
+  background: var(--gg-gray-50);
+  color: var(--gg-gray-700);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 0 8px;
+  transition: all var(--gg-transition);
+  font-family: inherit;
+  user-select: none;
+}
+
+.gg-lang-btn:hover {
+  border-color: var(--gg-teal);
+  color: var(--gg-teal);
+  background: var(--gg-teal-bg);
+}
+
+.gg-lang-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Hindi active state — teal background with Devanagari text */
+.gg-lang-btn.hindi-active {
+  background: var(--gg-teal);
+  color: var(--gg-white);
+  border-color: var(--gg-teal);
+  font-size: 13px;
+}
+
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 440px) {
   .gg-panel {

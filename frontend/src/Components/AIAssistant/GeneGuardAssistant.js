@@ -16,7 +16,7 @@ console.log('[GeneGuard] Gemini Key loaded:', GEMINI_API_KEY ? `YES (${GEMINI_AP
 console.log('[GeneGuard] Primary Model:', MODEL);
 
 const SYSTEM_PROMPT =
-  "You are a helpful conversational AI assistant for GeneGuard, a genetic health platform. Answer whatever the user asks naturally and directly. If they say hi, say hi back casually. If they ask a general question, answer it normally. If they ask about genetics, DNA, or health, give a clear helpful answer. Only mention GeneGuard pages when the user asks about the website or needs navigation help. GeneGuard pages: Home(/), Learn Genetics(/learn-genetics), Genetic Disorders(/genetic-disorders), DNA Testing(/dna), DNA Agents(/dna/agents), Patient Intake(/dna/patient-intake), Genetic Assessment AI(/genetic-assessment), Counselling(/counselling), Login(/login), Signup(/register), About(/about). Support both English and Hindi — if user writes in Hindi, respond in Hindi. Keep responses concise and natural.";
+  "You are a helpful conversational AI assistant for GeneGuard, a genetic health platform. Answer whatever the user asks naturally and directly. If they say hi, say hi back casually. If they ask a general question, answer it normally. If they ask about genetics, DNA, or health, give a clear helpful answer. Only mention GeneGuard pages when the user asks about the website or needs navigation help. GeneGuard pages: Home(/), Learn Genetics(/learn-genetics), Genetic Disorders(/genetic-disorders), DNA Testing(/dna), DNA Agents(/dna/agents), Patient Intake(/dna/patient-intake), Genetic Assessment AI(/genetic-assessment), Counselling(/counselling), Login(/login), Signup(/register), About(/about). If the user writes or speaks in Hindi (Devanagari script), respond entirely in Hindi using proper Devanagari script. If they write or speak in English, respond in English. Always match the language the user is using. Keep responses concise and natural.";
 
 const WELCOME_MESSAGE = {
   id: 'welcome',
@@ -63,6 +63,7 @@ const GeneGuardAssistant = () => {
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const [speakingMsgId, setSpeakingMsgId] = useState(null);
+  const [language, setLanguage] = useState('en'); // 'en' or 'hi'
 
   // ── Refs ─────────────────────────────────────────────────────────────────
   const messagesEndRef = useRef(null);
@@ -81,7 +82,7 @@ const GeneGuardAssistant = () => {
 
     setSpeechSupported(true);
     const recognition = new SR();
-    recognition.lang = 'en-IN';
+    recognition.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
     recognition.continuous = false;
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
@@ -101,7 +102,7 @@ const GeneGuardAssistant = () => {
     return () => {
       try { recognitionRef.current?.abort(); } catch { /* ignore */ }
     };
-  }, []);
+  }, [language]); // Re-create recognition when language changes
 
   // ── Auto-scroll ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -308,6 +309,8 @@ const GeneGuardAssistant = () => {
       synthRef.current?.cancel();
       setSpeakingMsgId(null);
       setInput('');
+      // Set recognition language before starting
+      recognitionRef.current.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
       setIsListening(true);
       try {
         recognitionRef.current.start();
@@ -315,7 +318,12 @@ const GeneGuardAssistant = () => {
         setIsListening(false);
       }
     }
-  }, [isListening]);
+  }, [isListening, language]);
+
+  // ── Toggle language (EN ↔ Hindi) ────────────────────────────────────────
+  const toggleLanguage = useCallback(() => {
+    setLanguage((prev) => (prev === 'en' ? 'hi' : 'en'));
+  }, []);
 
   // ── Toggle mute ─────────────────────────────────────────────────────────
   const toggleMute = useCallback(() => {
@@ -459,13 +467,28 @@ const GeneGuardAssistant = () => {
 
           {/* Input Area */}
           <div className="gg-input-area">
-            {isListening && <span className="gg-listening-label">🎙 Listening…</span>}
+            {isListening && (
+              <span className="gg-listening-label">
+                🎙 {language === 'hi' ? 'सुन रहा है…' : 'Listening…'}
+              </span>
+            )}
             <div className="gg-input-row">
+              {/* Language Toggle */}
+              <button
+                className={`gg-lang-btn ${language === 'hi' ? 'hindi-active' : ''}`}
+                onClick={toggleLanguage}
+                aria-label={language === 'hi' ? 'Switch to English' : 'Switch to Hindi'}
+                title={language === 'hi' ? 'हिंदी mode — click for English' : 'English mode — click for हिंदी'}
+                disabled={isLoading}
+                id="gg-lang-toggle"
+              >
+                {language === 'hi' ? 'हिं' : 'EN'}
+              </button>
               <input
                 ref={inputRef}
                 type="text"
                 className="gg-text-input"
-                placeholder="Type a message…"
+                placeholder={language === 'hi' ? 'हिंदी में टाइप करें...' : 'Type a message…'}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -477,7 +500,7 @@ const GeneGuardAssistant = () => {
                   className={`gg-mic-btn ${isListening ? 'recording' : ''}`}
                   onClick={toggleListening}
                   aria-label={isListening ? 'Stop listening' : 'Start voice input'}
-                  title={isListening ? 'Stop listening' : 'Speak your message'}
+                  title={isListening ? (language === 'hi' ? 'बंद करें' : 'Stop listening') : (language === 'hi' ? 'हिंदी में बोलें' : 'Speak your message')}
                   disabled={isLoading}
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
