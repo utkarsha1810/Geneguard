@@ -72,8 +72,7 @@ const GeneticAssessmentAI = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // ── Botpress Integration ──
-  const [botpressLoaded, setBotpressLoaded] = useState(false);
+
 
   const dropdownRef = useRef(null);
   const dashboardRef = useRef(null);
@@ -103,46 +102,7 @@ const GeneticAssessmentAI = () => {
     if (savedAgents) { try { setAgentResults(JSON.parse(savedAgents)); } catch (e) { console.warn('Failed to parse agent results:', e); } }
   }, []);
 
-  // ── Botpress Embed Script Ingestion ──
-  useEffect(() => {
-    const script1 = document.createElement('script');
-    script1.src = 'https://cdn.botpress.cloud/webchat/v3.7/inject.js';
-    script1.async = true;
 
-    const script2 = document.createElement('script');
-    script2.src = 'https://files.bpcontent.cloud/2026/05/26/12/20260526120300-AH3YHEZD.js';
-    script2.defer = true;
-    script2.onload = () => {
-      setBotpressLoaded(true);
-      console.log('[GeneticAI] ✓ Botpress bot AH3YHEZD loaded successfully');
-    };
-
-    document.body.appendChild(script1);
-    document.body.appendChild(script2);
-
-    return () => {
-      if (script1.parentNode) script1.parentNode.removeChild(script1);
-      if (script2.parentNode) script2.parentNode.removeChild(script2);
-    };
-  }, []);
-
-  const openBotpressChat = useCallback(() => {
-    try {
-      if (window.botpress) {
-        if (typeof window.botpress.open === 'function') {
-          window.botpress.open();
-        } else if (typeof window.botpress.toggle === 'function') {
-          window.botpress.toggle();
-        }
-      } else if (window.botpressWebChat) {
-        if (typeof window.botpressWebChat.sendEvent === 'function') {
-          window.botpressWebChat.sendEvent({ type: 'show' });
-        }
-      }
-    } catch (err) {
-      console.error('[GeneticAI] Failed to open Botpress:', err);
-    }
-  }, []);
 
   const scrollToDashboard = useCallback(() => {
     dashboardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -255,7 +215,7 @@ const GeneticAssessmentAI = () => {
           <h1>{t.hero.title}</h1>
           <p className="ga-hero-subtitle">{t.hero.subtitle}</p>
           <div className="ga-hero-actions">
-            <button className="ga-primary-btn" onClick={openBotpressChat}>{t.hero.startChat}</button>
+            <button className="ga-primary-btn" onClick={() => { const fab = document.getElementById('gg-assistant-fab'); if (fab) fab.click(); }}>{t.hero.startChat}</button>
             <button className="ga-outline-btn" onClick={scrollToDashboard}>{t.hero.viewDash}</button>
             <Link to="/dna/patient-intake" className="ga-outline-btn">{t.hero.editIntake}</Link>
             <Link to="/dna/agents" className="ga-outline-btn">{t.hero.openAgents}</Link>
@@ -340,7 +300,7 @@ const GeneticAssessmentAI = () => {
             <div className="ga-empty-state">
               <span className="ga-empty-icon">💬</span>
               <p>{t.history.noHistory}</p>
-              <button className="ga-primary-btn" onClick={openBotpressChat} style={{marginTop: '1rem', fontSize: '.9rem'}}>
+              <button className="ga-primary-btn" onClick={() => { const fab = document.getElementById('gg-assistant-fab'); if (fab) fab.click(); }} style={{marginTop: '1rem', fontSize: '.9rem'}}>
                 💬 Open AI Chat
               </button>
             </div>
@@ -419,15 +379,7 @@ const GeneticAssessmentAI = () => {
         </div>
       </footer>
 
-      {/* ── Botpress Floating Chat Orb ── */}
-      <button className="ga-chat-orb" onClick={openBotpressChat} aria-label="Open AI Chat" id="ga-chat-bubble">
-        <div className="ga-orb-ring">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-          </svg>
-        </div>
-        <span className="ga-orb-label">{botpressLoaded ? 'AI Chat' : 'Loading…'}</span>
-      </button>
+      {/* AI Chat is now provided globally by GeneGuardAssistant in App.js */}
     </div>
   );
 };

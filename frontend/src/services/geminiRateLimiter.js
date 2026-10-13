@@ -53,8 +53,8 @@ console.log(`[RateLimiter] 🔑 Loaded ${API_KEYS.length} API key(s)`);
 API_KEYS.forEach((k, i) => console.log(`  Key ${i + 1}: ${k.substring(0, 8)}...`));
 
 /* ── Model Management ───────────────────────────────────────────────────── */
-const MODEL_NAME = 'gemini-2.0-flash-lite';
-const FALLBACK_MODEL = 'gemini-2.0-flash';
+const MODEL_NAME = 'gemini-2.0-flash';
+const FALLBACK_MODEL = 'gemini-3.8-flash';
 const generationConfig = { maxOutputTokens: 1200, temperature: 0.7 };
 
 // Registered model reinitializers from consuming services

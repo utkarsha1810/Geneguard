@@ -1,0 +1,484 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   GeneGuard AI Assistant — Complete Rebuild
+   Teal/white design, floating chat panel
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── CSS Variables ───────────────────────────────────────────────────────── */
+:root {
+  --gg-teal: #0d9488;
+  --gg-teal-dark: #0f766e;
+  --gg-teal-light: #14b8a6;
+  --gg-teal-bg: #f0fdfa;
+  --gg-white: #ffffff;
+  --gg-gray-50: #f9fafb;
+  --gg-gray-100: #f3f4f6;
+  --gg-gray-200: #e5e7eb;
+  --gg-gray-300: #d1d5db;
+  --gg-gray-500: #6b7280;
+  --gg-gray-700: #374151;
+  --gg-gray-900: #111827;
+  --gg-shadow: 0 10px 40px rgba(0, 0, 0, 0.15), 0 2px 10px rgba(0, 0, 0, 0.08);
+  --gg-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --gg-radius: 12px;
+  --gg-transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Floating Action Button ──────────────────────────────────────────────── */
+.gg-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, var(--gg-teal), var(--gg-teal-dark));
+  color: var(--gg-white);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(13, 148, 136, 0.4), 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform var(--gg-transition), box-shadow var(--gg-transition);
+  animation: gg-fab-enter 0.4s ease-out;
+}
+
+.gg-fab:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 28px rgba(13, 148, 136, 0.5), 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.gg-fab:active {
+  transform: scale(0.95);
+}
+
+.gg-fab svg {
+  width: 26px;
+  height: 26px;
+}
+
+@keyframes gg-fab-enter {
+  from { transform: scale(0); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+/* ── Chat Panel ──────────────────────────────────────────────────────────── */
+.gg-panel {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 10000;
+  width: 380px;
+  height: 520px;
+  background: var(--gg-white);
+  border-radius: var(--gg-radius);
+  box-shadow: var(--gg-shadow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: gg-panel-enter 0.3s ease-out;
+}
+
+@keyframes gg-panel-enter {
+  from { transform: translateY(20px) scale(0.95); opacity: 0; }
+  to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.gg-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, var(--gg-teal), var(--gg-teal-dark));
+  color: var(--gg-white);
+  flex-shrink: 0;
+}
+
+.gg-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gg-header-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gg-header-avatar svg {
+  width: 18px;
+  height: 18px;
+}
+
+.gg-header-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: 0.01em;
+}
+
+.gg-header-subtitle {
+  font-size: 11px;
+  opacity: 0.8;
+  display: block;
+  margin-top: 1px;
+}
+
+.gg-header-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.gg-header-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--gg-white);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--gg-transition);
+}
+
+.gg-header-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.gg-header-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.gg-header-btn.muted {
+  background: rgba(255, 80, 80, 0.3);
+}
+
+/* ── Messages Area ───────────────────────────────────────────────────────── */
+.gg-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--gg-gray-50);
+  scroll-behavior: smooth;
+}
+
+.gg-messages::-webkit-scrollbar {
+  width: 5px;
+}
+
+.gg-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.gg-messages::-webkit-scrollbar-thumb {
+  background: var(--gg-gray-300);
+  border-radius: 10px;
+}
+
+/* ── Message Bubbles ─────────────────────────────────────────────────────── */
+.gg-msg {
+  display: flex;
+  flex-direction: column;
+  max-width: 82%;
+  animation: gg-msg-in 0.25s ease-out;
+}
+
+@keyframes gg-msg-in {
+  from { transform: translateY(8px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+.gg-msg-user {
+  align-self: flex-end;
+}
+
+.gg-msg-ai {
+  align-self: flex-start;
+}
+
+.gg-bubble {
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.gg-msg-user .gg-bubble {
+  background: var(--gg-teal);
+  color: var(--gg-white);
+  border-bottom-right-radius: 4px;
+}
+
+.gg-msg-ai .gg-bubble {
+  background: var(--gg-white);
+  color: var(--gg-gray-900);
+  border: 1px solid var(--gg-gray-200);
+  border-bottom-left-radius: 4px;
+}
+
+.gg-msg-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 0 4px;
+}
+
+.gg-msg-user .gg-msg-meta {
+  justify-content: flex-end;
+}
+
+.gg-msg-time {
+  font-size: 10px;
+  color: var(--gg-gray-500);
+}
+
+/* ── Replay speaker button on AI messages ────────────────────────────────── */
+.gg-replay-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--gg-gray-500);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: color var(--gg-transition), background var(--gg-transition);
+}
+
+.gg-replay-btn:hover {
+  color: var(--gg-teal);
+  background: var(--gg-teal-bg);
+}
+
+.gg-replay-btn.speaking {
+  color: var(--gg-teal);
+  animation: gg-pulse-soft 1s infinite;
+}
+
+.gg-replay-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* ── Suggested Chips ─────────────────────────────────────────────────────── */
+.gg-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 4px;
+  margin-top: 4px;
+}
+
+.gg-chip {
+  padding: 6px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--gg-teal-light);
+  background: var(--gg-teal-bg);
+  color: var(--gg-teal-dark);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all var(--gg-transition);
+  white-space: nowrap;
+}
+
+.gg-chip:hover {
+  background: var(--gg-teal);
+  color: var(--gg-white);
+  border-color: var(--gg-teal);
+}
+
+/* ── Typing Indicator ────────────────────────────────────────────────────── */
+.gg-typing {
+  display: flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 4px;
+  padding: 10px 16px;
+  background: var(--gg-white);
+  border: 1px solid var(--gg-gray-200);
+  border-radius: 14px;
+  border-bottom-left-radius: 4px;
+}
+
+.gg-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gg-gray-300);
+  animation: gg-bounce 1.4s infinite ease-in-out both;
+}
+
+.gg-dot:nth-child(1) { animation-delay: 0s; }
+.gg-dot:nth-child(2) { animation-delay: 0.16s; }
+.gg-dot:nth-child(3) { animation-delay: 0.32s; }
+
+@keyframes gg-bounce {
+  0%, 80%, 100% { transform: scale(0.6); background: var(--gg-gray-300); }
+  40% { transform: scale(1); background: var(--gg-teal-light); }
+}
+
+/* ── Input Area ──────────────────────────────────────────────────────────── */
+.gg-input-area {
+  padding: 10px 12px;
+  border-top: 1px solid var(--gg-gray-200);
+  background: var(--gg-white);
+  flex-shrink: 0;
+}
+
+.gg-listening-label {
+  display: block;
+  font-size: 11px;
+  color: #ef4444;
+  margin-bottom: 6px;
+  padding-left: 4px;
+  animation: gg-pulse-soft 1.2s infinite;
+}
+
+@keyframes gg-pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.gg-input-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gg-text-input {
+  flex: 1;
+  padding: 9px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--gg-gray-200);
+  background: var(--gg-gray-50);
+  font-size: 13px;
+  outline: none;
+  transition: border-color var(--gg-transition), box-shadow var(--gg-transition);
+  color: var(--gg-gray-900);
+  font-family: inherit;
+}
+
+.gg-text-input:focus {
+  border-color: var(--gg-teal-light);
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+}
+
+.gg-text-input::placeholder {
+  color: var(--gg-gray-500);
+  font-size: 12.5px;
+}
+
+.gg-text-input:disabled {
+  opacity: 0.6;
+}
+
+/* ── Mic Button ──────────────────────────────────────────────────────────── */
+.gg-mic-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: var(--gg-gray-100);
+  color: var(--gg-gray-700);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all var(--gg-transition);
+}
+
+.gg-mic-btn:hover {
+  background: var(--gg-gray-200);
+  color: var(--gg-teal);
+}
+
+.gg-mic-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.gg-mic-btn svg {
+  width: 17px;
+  height: 17px;
+}
+
+/* Recording state — red pulse */
+.gg-mic-btn.recording {
+  background: #fee2e2;
+  color: #ef4444;
+  animation: gg-mic-pulse 1s infinite;
+}
+
+@keyframes gg-mic-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  70%  { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+/* ── Send Button ─────────────────────────────────────────────────────────── */
+.gg-send-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: var(--gg-teal);
+  color: var(--gg-white);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all var(--gg-transition);
+}
+
+.gg-send-btn:hover:not(:disabled) {
+  background: var(--gg-teal-dark);
+  transform: scale(1.05);
+}
+
+.gg-send-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.gg-send-btn svg {
+  width: 17px;
+  height: 17px;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 440px) {
+  .gg-panel {
+    width: calc(100vw - 16px);
+    height: calc(100vh - 80px);
+    bottom: 8px;
+    right: 8px;
+    border-radius: 10px;
+  }
+
+  .gg-fab {
+    bottom: 16px;
+    right: 16px;
+  }
+}

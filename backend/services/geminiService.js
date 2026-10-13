@@ -12,8 +12,8 @@ import {
 let genAI = null;
 let model = null;
 
-const MODEL_NAME = 'gemini-2.0-flash-lite';
-const FALLBACK_MODEL = 'gemini-2.0-flash';
+const MODEL_NAME = 'gemini-2.0-flash';
+const FALLBACK_MODEL = 'gemini-3.8-flash';
 
 /**
  * (Re-)initialise the Gemini model with a given API key.

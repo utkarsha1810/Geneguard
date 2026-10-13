@@ -219,7 +219,12 @@ ${rawText.substring(0, 15000)}
   for (const apiKey of uniqueKeys) {
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      let model;
+      try {
+        model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+      } catch (_) {
+        model = genAI.getGenerativeModel({ model: 'gemini-3.8-flash' });
+      }
 
       const apiCall = model.generateContent(prompt);
       const timeout = new Promise((_, reject) =>

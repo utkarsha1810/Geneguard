@@ -11,6 +11,7 @@ import PatientDNAIntake from "./Components/DNA/PatientDNAIntake";
 import GeneticAssessmentAI from "./Components/Pages/GeneticAssessmentAI";
 import Disorders from "./Components/Pages/Disorders";
 import AdminDashboard from "./Components/Admin/AdminDashboard";
+import GeneGuardAssistant from "./Components/AIAssistant/GeneGuardAssistant";
 
 function App() {
   return (
@@ -34,6 +35,8 @@ function App() {
         <Route path="/genetic-assessment" element={<GeneticAssessmentAI />} />
       
       </Routes>
+      {/* Gemini-powered AI Assistant — replaces Botpress, self-hides on login/register/admin */}
+      <GeneGuardAssistant />
     </BrowserRouter>
   );
 }
