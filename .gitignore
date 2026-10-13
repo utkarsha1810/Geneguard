@@ -26,3 +26,4 @@ yarn-debug.log*
 .vscode/
 .idea/
 Gene-Guard-main/
+.vercel
