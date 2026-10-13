@@ -345,6 +345,18 @@
   flex-shrink: 0;
 }
 
+.gg-mic-error-label {
+  display: block;
+  font-size: 11px;
+  color: #dc2626;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 4px 8px;
+  margin-bottom: 6px;
+  animation: gg-fade-in 0.2s ease-out;
+}
+
 .gg-listening-label {
   display: block;
   font-size: 11px;

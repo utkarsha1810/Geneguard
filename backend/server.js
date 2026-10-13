@@ -9,10 +9,10 @@
  * - Utils in /utils/ (logger.js, rateLimiter.js)
  */
 
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import dotenv from 'dotenv';
 import { validateEnvironment } from './config/envCheck.js';
 
 // Route imports
@@ -23,6 +23,7 @@ import consultationsRouter from './routes/consultations.js';
 import authRouter from './routes/auth.js';
 import adminRouter from './routes/adminRoutes.js';
 import doctorsRouter from './routes/doctors.js';
+import chatRouter from './routes/chat.js';
 
 // Service imports
 import {
@@ -48,8 +49,7 @@ import {
 // Utils imports
 import { logger } from './utils/logger.js';
 
-// Load environment variables
-dotenv.config();
+
 
 // Initialize Express app
 const app = express();
@@ -94,6 +94,9 @@ app.use('/api/admin', adminRouter);
 
 // Consultation & Appointment endpoints (Agora & Doctor sessions)
 app.use('/api', consultationsRouter);
+
+// AI Chatbot streaming endpoint (POST /api/chat)
+app.use('/api', chatRouter);
 
 // Patient evaluation endpoint
 app.post('/api/dna/patient/evaluate', (req, res) => {
