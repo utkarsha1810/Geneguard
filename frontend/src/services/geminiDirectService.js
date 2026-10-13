@@ -20,8 +20,8 @@ import {
 
 /* ── Initialise client ───────────────────────────────────────────────────── */
 let model = null;
-const MODEL_NAME = 'gemini-2.0-flash';
-const FALLBACK_MODEL = 'gemini-3.8-flash';
+const MODEL_NAME = 'gemini-3.5-flash';
+const FALLBACK_MODEL = 'gemini-3.5-flash-lite';
 const GEN_CONFIG = { maxOutputTokens: 800, temperature: 0.7 };
 
 /**

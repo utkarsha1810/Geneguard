@@ -3,15 +3,21 @@ import { useLocation } from 'react-router-dom';
 import './GeneGuardAssistant.css';
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   GeneGuard AI Assistant — Complete Rebuild
-   Gemini 1.5 Flash, Voice I/O, Hindi + English, Conversation History
+   GeneGuard AI Assistant — Direct Frontend Gemini Integration
+   Direct generateContent, MediaRecorder + Audio Transcription, Voice Output
    ═══════════════════════════════════════════════════════════════════════════ */
 
-// ── Backend API Route Configuration ─────────────────────────────────────────
-const getChatApiUrl = () => {
-  const rawApiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5050';
-  const backendBase = rawApiUrl.replace(/\/api\/?$/, '');
-  return `${backendBase}/api/chat`;
+// ── Gemini API Keys & Request Helper ───────────────────────────────────────
+const getAvailableKeys = () => {
+  const keys = [
+    process.env.REACT_APP_GEMINI_API_KEY,
+    'AIzaSyBqzIN6BWhXzZFELlW38MsXHJHjU46cHmw',
+    process.env.REACT_APP_GEMINI_KEY_1,
+    process.env.REACT_APP_GEMINI_KEY_2,
+    process.env.REACT_APP_GEMINI_KEY_3,
+    process.env.REACT_APP_GEMINI_KEY_4,
+  ].filter(Boolean);
+  return Array.from(new Set(keys));
 };
 
 const SYSTEM_PROMPT =
@@ -54,6 +60,96 @@ const cleanMarkdown = (text) => {
     .trim();
 };
 
+/**
+ * Robust Direct Gemini API caller:
+ * Tries requested gemini-2.0-flash first, and if unavailable/quota/overloaded,
+ * falls back seamlessly to available flash models.
+ */
+const makeGeminiRequest = async (endpoint, body) => {
+  const keys = getAvailableKeys();
+  const models = [
+    'gemini-2.0-flash',
+    'gemini-3.5-flash',
+    'gemini-3.5-flash-lite',
+    'gemini-3.1-flash-lite',
+    'gemini-3.8-flash',
+    'gemini-flash-latest',
+  ];
+
+  let lastError = null;
+
+  for (const apiKey of keys) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (apiKey.startsWith('ya29.')) {
+      headers['Authorization'] = `Bearer ${apiKey}`;
+    } else {
+      headers['x-goog-api-key'] = apiKey;
+    }
+
+    for (const model of models) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:${endpoint}?key=${encodeURIComponent(
+          apiKey
+        )}`;
+
+        const response = await fetch(url, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(body),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          lastError = new Error(data?.error?.message || `HTTP ${response.status}`);
+          // 404: model not found, try next model with same key
+          if (response.status === 404) {
+            continue;
+          }
+          // 429 or 503: quota or overloaded, try next model or key
+          if (response.status === 429 || response.status === 503) {
+            continue;
+          }
+          // 401 or 403: auth error with this key, break to next key
+          if (response.status === 401 || response.status === 403) {
+            break;
+          }
+          continue;
+        }
+
+        return data;
+      } catch (err) {
+        lastError = err;
+        continue;
+      }
+    }
+  }
+
+  throw lastError || new Error('No response from Gemini API');
+};
+
+/**
+ * FIX 1: Direct Frontend Gemini Chat Call
+ */
+const callGeminiChat = async (message, history = []) => {
+  const recentHistory = (history || []).slice(-6).map((h) => ({
+    role: h.role === 'assistant' ? 'model' : h.role,
+    parts: Array.isArray(h.parts) ? h.parts : [{ text: h.text || '' }],
+  }));
+
+  const requestBody = {
+    system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+    contents: [...recentHistory, { role: 'user', parts: [{ text: message }] }],
+    generationConfig: { temperature: 0.7 },
+  };
+
+  const data = await makeGeminiRequest('generateContent', requestBody);
+  const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!reply) {
+    throw new Error('Empty response from Gemini');
+  }
+  return reply;
+};
+
 /* ═══════════════════════════════════════════════════════════════════════════
    Component
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -71,9 +167,8 @@ const GeneGuardAssistant = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showChips, setShowChips] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [speechSupported, setSpeechSupported] = useState(false);
-  const [micError, setMicError] = useState(null);
+  const [recordingStatus, setRecordingStatus] = useState('idle'); // 'idle' | 'recording' | 'transcribing'
+  const [voiceError, setVoiceError] = useState(null);
   const [speakingMsgId, setSpeakingMsgId] = useState(null);
   const [language, setLanguage] = useState('en'); // 'en' or 'hi'
 
@@ -81,59 +176,26 @@ const GeneGuardAssistant = () => {
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const inputRef = useRef(null);
-  const recognitionRef = useRef(null);
   const synthRef = useRef(window.speechSynthesis);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const streamRef = useRef(null);
+  const silenceTimerRef = useRef(null);
 
-  // ── Setup Speech Recognition ─────────────────────────────────────────────
+  // ── Cleanup MediaRecorder on unmount ─────────────────────────────────────
   useEffect(() => {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) {
-      setSpeechSupported(false);
-      return;
-    }
-
-    setSpeechSupported(true);
-    const recognition = new SR();
-    recognition.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
-    recognition.continuous = false;
-    recognition.interimResults = true; // show partial results while speaking
-    recognition.maxAlternatives = 1;
-
-    recognition.onresult = (event) => {
-      let transcript = '';
-      for (let i = 0; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript;
-      }
-      console.log('Transcript received:', transcript);
-      console.log('Current transcript:', transcript);
-      setInput(transcript); // update input field in real time as user speaks
-      setMicError(null);
-    };
-
-    recognition.onerror = (event) => {
-      console.log('Speech recognition error:', event.error);
-      setIsListening(false);
-      if (event.error === 'not-allowed') {
-        setMicError('Microphone access denied. Please allow microphone in browser settings.');
-      } else if (event.error === 'network') {
-        setMicError('Network error - try again');
-      } else if (event.error !== 'no-speech') {
-        setMicError(`Speech error: ${event.error}`);
-      }
-    };
-
-    recognition.onend = () => {
-      console.log('Speech recognition ended');
-      setIsListening(false); // stop pulsing animation
-      // do NOT clear the input value here
-    };
-
-    recognitionRef.current = recognition;
-
     return () => {
-      try { recognitionRef.current?.abort(); } catch { /* ignore */ }
+      try {
+        clearTimeout(silenceTimerRef.current);
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+          mediaRecorderRef.current.stop();
+        }
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach((t) => t.stop());
+        }
+      } catch (_) {}
     };
-  }, [language]); // Re-create recognition when language changes
+  }, []);
 
   // ── Auto-scroll ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -169,120 +231,13 @@ const GeneGuardAssistant = () => {
     };
   }, []);
 
-  // ── Send message to backend Gemini Streaming Endpoint ────────────────────
-  const sendMessageStream = useCallback(
-    async (userText, onChunk) => {
-      const chatUrl = getChatApiUrl();
-      const recentHistory = conversationHistory.slice(-6);
-
-      console.log('[GeneGuard] Calling backend chat endpoint:', chatUrl);
-
-      const response = await fetch(chatUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: userText,
-          history: recentHistory,
-        }),
-      });
-
-      if (!response.ok || !response.body) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData?.error || `Server error (HTTP ${response.status})`);
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let fullText = '';
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        buffer += chunk;
-
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed) continue;
-
-          let chunkData = '';
-          if (trimmed.startsWith('data:')) {
-            chunkData = trimmed.slice(5).trim();
-          } else if (!trimmed.startsWith(':')) {
-            chunkData = trimmed.replace(/^\[|,|\]$/g, '').trim();
-          }
-
-          if (!chunkData || chunkData === '[DONE]') continue;
-
-          try {
-            const parsed = JSON.parse(chunkData);
-            const textChunk = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (textChunk) {
-              fullText += textChunk;
-              onChunk(textChunk, fullText);
-            }
-          } catch (_) {
-            // skip unparseable or partial chunk
-          }
-        }
-      }
-
-      // Process any trailing line in buffer
-      if (buffer.trim()) {
-        const trimmed = buffer.trim();
-        let chunkData = '';
-        if (trimmed.startsWith('data:')) {
-          chunkData = trimmed.slice(5).trim();
-        } else if (!trimmed.startsWith(':')) {
-          chunkData = trimmed.replace(/^\[|,|\]$/g, '').trim();
-        }
-
-        if (chunkData && chunkData !== '[DONE]') {
-          try {
-            const parsed = JSON.parse(chunkData);
-            const textChunk = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (textChunk) {
-              fullText += textChunk;
-              onChunk(textChunk, fullText);
-            }
-          } catch (_) {
-            // skip
-          }
-        }
-      }
-
-      if (!fullText.trim()) {
-        throw new Error('No response generated by server');
-      }
-
-      // Persist to conversation history
-      const cleanFinal = cleanMarkdown(fullText);
-      setConversationHistory((prev) => [
-        ...prev.slice(-10),
-        { role: 'user', parts: [{ text: userText }] },
-        { role: 'model', parts: [{ text: cleanFinal }] },
-      ]);
-
-      return cleanFinal;
-    },
-    [conversationHistory]
-  );
-
-  // ── Speak text aloud with Female Voice Selection ──────────────────────────
+  // ── Speak text aloud with Female Voice Selection (Voice Output intact) ───
   const speakText = useCallback(
     (text, msgId) => {
       if (!synthRef.current || isMuted) return;
 
       synthRef.current.cancel();
 
-      // Clean markdown/route tokens for cleaner speech
       const clean = cleanMarkdown(text)
         .replace(/\([^)]*\)/g, '')
         .replace(/\n+/g, '. ')
@@ -292,14 +247,13 @@ const GeneGuardAssistant = () => {
 
       const utterance = new SpeechSynthesisUtterance(clean);
       utterance.rate = 0.95;
-      utterance.pitch = 1.05; // Slightly higher pitch for natural female tone
+      utterance.pitch = 1.05; // Natural female tone
       utterance.volume = 1.0;
 
-      // FIX 5: Female voice for both English and Hindi
       const currentVoices = synthRef.current.getVoices() || voices;
       const hindiMode = isHindi(clean);
 
-      // For English (en-IN):
+      // English female voices:
       const englishVoice =
         currentVoices.find((v) => v.lang === 'en-IN' && v.name.toLowerCase().includes('female')) ||
         currentVoices.find((v) => v.lang === 'en-IN' && (v.name.includes('Raveena') || v.name.includes('Veena') || v.name.includes('Priya'))) ||
@@ -307,7 +261,7 @@ const GeneGuardAssistant = () => {
         currentVoices.find((v) => v.lang.startsWith('en') && v.name.toLowerCase().includes('female')) ||
         currentVoices.find((v) => v.lang.startsWith('en') && (v.name.includes('Samantha') || v.name.includes('Victoria') || v.name.includes('Karen')));
 
-      // For Hindi (hi-IN):
+      // Hindi female voices:
       const hindiVoice =
         currentVoices.find((v) => v.lang === 'hi-IN' && v.name.toLowerCase().includes('female')) ||
         currentVoices.find((v) => v.lang === 'hi-IN' && (v.name.includes('Lekha') || v.name.includes('Kalpana') || v.name.includes('Heera'))) ||
@@ -325,15 +279,182 @@ const GeneGuardAssistant = () => {
     [isMuted, voices]
   );
 
-  // ── Handle send with Instant Typing Indicator & Streamed Display ──────────
+  // ── FIX 2: Send audio to Gemini for transcription ─────────────────────────
+  const transcribeAudio = useCallback(
+    async (base64AudioData, audioMime = 'audio/webm') => {
+      const promptText =
+        language === 'hi'
+          ? 'Transcribe this Hindi audio to Devanagari text exactly. Return only the transcribed text, nothing else.'
+          : 'Transcribe this English audio to text exactly. Return only the transcribed text, nothing else.';
+
+      const requestBody = {
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              {
+                inline_data: {
+                  mime_type: audioMime,
+                  data: base64AudioData,
+                },
+              },
+              {
+                text: promptText,
+              },
+            ],
+          },
+        ],
+      };
+
+      try {
+        const data = await makeGeminiRequest('generateContent', requestBody);
+        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+
+        if (rawText) {
+          setInput(rawText);
+          setVoiceError(null);
+        } else {
+          setVoiceError('Could not understand audio, please try again');
+        }
+      } catch (err) {
+        console.error('[GeneGuardAssistant] Audio transcription error:', err);
+        setVoiceError('Could not understand audio, please try again');
+      } finally {
+        setRecordingStatus('idle');
+      }
+    },
+    [language]
+  );
+
+  // ── Stop recording and process audio ─────────────────────────────────────
+  const stopRecording = useCallback(() => {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      try {
+        mediaRecorderRef.current.stop();
+      } catch (_) {}
+    }
+  }, []);
+
+  // ── Start recording using MediaRecorder ──────────────────────────────────
+  const startRecording = useCallback(async () => {
+    synthRef.current?.cancel();
+    setSpeakingMsgId(null);
+    setVoiceError(null);
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setVoiceError('Please allow microphone access in browser settings');
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+
+      let mimeType = 'audio/webm';
+      if (window.MediaRecorder && typeof MediaRecorder.isTypeSupported === 'function') {
+        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+          mimeType = 'audio/webm;codecs=opus';
+        } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+          mimeType = 'audio/webm';
+        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+          mimeType = 'audio/mp4';
+        }
+      }
+
+      const cleanMime = mimeType.split(';')[0] || 'audio/webm';
+      const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        if (silenceTimerRef.current) {
+          clearTimeout(silenceTimerRef.current);
+          silenceTimerRef.current = null;
+        }
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach((track) => track.stop());
+          streamRef.current = null;
+        }
+
+        const audioBlob = new Blob(audioChunksRef.current, { type: cleanMime });
+
+        if (audioBlob.size < 100) {
+          setRecordingStatus('idle');
+          setVoiceError('Could not understand audio, please try again');
+          return;
+        }
+
+        setRecordingStatus('transcribing');
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          try {
+            const resultStr = reader.result;
+            if (typeof resultStr === 'string') {
+              const base64 = resultStr.split(',')[1];
+              if (base64) {
+                transcribeAudio(base64, cleanMime);
+                return;
+              }
+            }
+            setRecordingStatus('idle');
+            setVoiceError('Could not understand audio, please try again');
+          } catch (_) {
+            setRecordingStatus('idle');
+            setVoiceError('Could not understand audio, please try again');
+          }
+        };
+        reader.onerror = () => {
+          setRecordingStatus('idle');
+          setVoiceError('Could not understand audio, please try again');
+        };
+        reader.readAsDataURL(audioBlob);
+      };
+
+      mediaRecorder.start(250);
+      setRecordingStatus('recording');
+
+      // Stop recording after user clicks mic again OR after 10 seconds of silence/timeout
+      silenceTimerRef.current = setTimeout(() => {
+        stopRecording();
+      }, 10000);
+    } catch (err) {
+      console.warn('[GeneGuardAssistant] getUserMedia error:', err);
+      setRecordingStatus('idle');
+      setVoiceError('Please allow microphone access in browser settings');
+    }
+  }, [stopRecording, transcribeAudio]);
+
+  // ── Toggle recording button handler ──────────────────────────────────────
+  const toggleRecording = useCallback(() => {
+    if (recordingStatus === 'recording') {
+      stopRecording();
+    } else if (recordingStatus === 'idle') {
+      startRecording();
+    }
+  }, [recordingStatus, startRecording, stopRecording]);
+
+  // ── Handle send with Direct Gemini Call (FIX 1) ───────────────────────────
   const handleSend = useCallback(
     async (overrideText) => {
       const text = (overrideText || input).trim();
       if (!text || isLoading) return;
 
-      // Stop any ongoing speech
       synthRef.current?.cancel();
       setSpeakingMsgId(null);
+      if (recordingStatus === 'recording') {
+        stopRecording();
+      }
 
       const userMsg = {
         id: Date.now(),
@@ -343,69 +464,40 @@ const GeneGuardAssistant = () => {
       };
 
       const aiMsgId = Date.now() + 1;
-      let hasReceivedFirstChunk = false;
 
       setInput('');
       setShowChips(false);
-
-      // FIX 4: Show typing dots as soon as user hits send, before API call even starts
       setIsLoading(true);
       setMessages((prev) => [...prev, userMsg]);
 
       try {
-        const fullAiText = await sendMessageStream(text, (chunk, fullTextSoFar) => {
-          // FIX 3: Strip markdown from streamed chunks on every stream update
-          const cleanText = cleanMarkdown(fullTextSoFar);
+        const rawAiText = await callGeminiChat(text, conversationHistory);
+        const cleanText = cleanMarkdown(rawAiText);
 
-          // FIX 4: Remove dots as soon as first chunk arrives
-          if (!hasReceivedFirstChunk) {
-            hasReceivedFirstChunk = true;
-            setIsLoading(false);
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: aiMsgId,
-                role: 'assistant',
-                text: cleanText,
-                timestamp: new Date(),
-              },
-            ]);
-          } else {
-            // Update message state on each chunk so text appears word by word
-            setMessages((prev) =>
-              prev.map((m) => (m.id === aiMsgId ? { ...m, text: cleanText } : m))
-            );
-          }
-        });
-
-        const finalClean = cleanMarkdown(fullAiText);
-
-        // Ensure loading is false
         setIsLoading(false);
 
-        // Fallback if entire response arrived without interim chunk
-        if (!hasReceivedFirstChunk && finalClean) {
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: aiMsgId,
-              role: 'assistant',
-              text: finalClean,
-              timestamp: new Date(),
-            },
-          ]);
-        } else if (finalClean) {
-          setMessages((prev) =>
-            prev.map((m) => (m.id === aiMsgId ? { ...m, text: finalClean } : m))
-          );
-        }
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: aiMsgId,
+            role: 'assistant',
+            text: cleanText,
+            timestamp: new Date(),
+          },
+        ]);
 
-        // Auto-speak in female voice unless muted (pass cleanText, never raw text)
-        if (!isMuted && finalClean) {
-          setTimeout(() => speakText(finalClean, aiMsgId), 100);
+        setConversationHistory((prev) => [
+          ...prev.slice(-10),
+          { role: 'user', parts: [{ text }] },
+          { role: 'model', parts: [{ text: cleanText }] },
+        ]);
+
+        // Auto-speak in female voice unless muted
+        if (!isMuted && cleanText) {
+          setTimeout(() => speakText(cleanText, aiMsgId), 100);
         }
       } catch (err) {
-        console.error('[GeneGuardAssistant] Error:', err);
+        console.error('[GeneGuardAssistant] Chat error:', err);
         setIsLoading(false);
         const errMsg = {
           id: aiMsgId,
@@ -413,80 +505,11 @@ const GeneGuardAssistant = () => {
           text: "Sorry, I couldn't process that right now. Please try again!",
           timestamp: new Date(),
         };
-        setMessages((prev) => {
-          const exists = prev.some((m) => m.id === aiMsgId);
-          if (exists) {
-            return prev.map((m) => (m.id === aiMsgId ? errMsg : m));
-          }
-          return [...prev, errMsg];
-        });
-      } finally {
-        setIsLoading(false);
+        setMessages((prev) => [...prev, errMsg]);
       }
     },
-    [input, isLoading, sendMessageStream, speakText, isMuted]
+    [input, isLoading, recordingStatus, stopRecording, conversationHistory, isMuted, speakText]
   );
-
-  // ── Toggle microphone ───────────────────────────────────────────────────
-  const toggleListening = useCallback(() => {
-    if (!recognitionRef.current) return;
-
-    if (isListening) {
-      try {
-        recognitionRef.current.stop();
-      } catch (_) {}
-      setIsListening(false);
-    } else {
-      synthRef.current?.cancel();
-      setSpeakingMsgId(null);
-      setMicError(null);
-      setInput(''); // clear input field so spoken words appear cleanly
-
-      // Explicit microphone permission request before starting recognition
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices
-          .getUserMedia({ audio: true })
-          .then((stream) => {
-            // Stop tracks immediately so hardware mic is released for SpeechRecognition
-            stream.getTracks().forEach((track) => track.stop());
-
-            if (!recognitionRef.current) return;
-            recognitionRef.current.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
-            recognitionRef.current.continuous = false;
-            recognitionRef.current.interimResults = true; // show partial results while speaking
-            setIsListening(true);
-            try {
-              recognitionRef.current.start();
-            } catch (err) {
-              console.log('Speech recognition start error:', err);
-              if (err.name !== 'InvalidStateError') {
-                setIsListening(false);
-              }
-            }
-          })
-          .catch((err) => {
-            console.log('Microphone access denied:', err);
-            setIsListening(false);
-            setMicError('Microphone access denied. Please allow microphone in browser settings.');
-          });
-      } else {
-        // Fallback for browsers without navigator.mediaDevices
-        try {
-          recognitionRef.current.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
-          recognitionRef.current.continuous = false;
-          recognitionRef.current.interimResults = true;
-          setIsListening(true);
-          recognitionRef.current.start();
-        } catch (err) {
-          console.log('Speech recognition fallback start error:', err);
-          if (err.name !== 'InvalidStateError') {
-            setIsListening(false);
-            setMicError('Microphone access not available');
-          }
-        }
-      }
-    }
-  }, [isListening, language]);
 
   // ── Toggle language (EN ↔ Hindi) ────────────────────────────────────────
   const toggleLanguage = useCallback(() => {
@@ -523,7 +546,7 @@ const GeneGuardAssistant = () => {
   // ═══════════════════════════════════════════════════════════════════════════
   return (
     <>
-      {/* ── FAB ── */}
+      {/* ── Floating Action Button (FAB) ── */}
       {!isOpen && (
         <button
           className="gg-fab"
@@ -550,7 +573,7 @@ const GeneGuardAssistant = () => {
               </div>
               <div>
                 <h3 className="gg-header-title">GeneGuard AI</h3>
-                <span className="gg-header-subtitle">Powered by Gemini</span>
+                <span className="gg-header-subtitle">Direct Gemini 2.0 Integration</span>
               </div>
             </div>
             <div className="gg-header-right">
@@ -635,15 +658,10 @@ const GeneGuardAssistant = () => {
 
           {/* Input Area */}
           <div className="gg-input-area">
-            {micError && (
-              <span className="gg-mic-error-label">
-                ⚠️ {micError}
-              </span>
-            )}
-            {isListening && (
-              <span className="gg-listening-label">
-                🎙 {language === 'hi' ? 'सुन रहा है…' : 'Listening…'}
-              </span>
+            {voiceError && (
+              <div className="gg-mic-error-label">
+                ⚠️ {voiceError}
+              </div>
             )}
             <div className="gg-input-row">
               {/* Language Toggle */}
@@ -657,6 +675,7 @@ const GeneGuardAssistant = () => {
               >
                 {language === 'hi' ? 'हिं' : 'EN'}
               </button>
+
               <input
                 ref={inputRef}
                 type="text"
@@ -665,25 +684,48 @@ const GeneGuardAssistant = () => {
                 value={input}
                 onChange={(e) => {
                   setInput(e.target.value);
-                  if (micError) setMicError(null);
+                  if (voiceError) setVoiceError(null);
                 }}
                 onKeyDown={handleKeyDown}
                 disabled={isLoading}
                 id="gg-chat-input"
               />
-              {speechSupported && (
-                <button
-                  className={`gg-mic-btn ${isListening ? 'recording' : ''}`}
-                  onClick={toggleListening}
-                  aria-label={isListening ? 'Stop listening' : 'Start voice input'}
-                  title={isListening ? (language === 'hi' ? 'बंद करें' : 'Stop listening') : (language === 'hi' ? 'हिंदी में बोलें' : 'Speak your message')}
-                  disabled={isLoading}
-                >
+
+              {/* Mic Button — never hidden, reflects recording/transcribing states */}
+              <button
+                className={`gg-mic-btn ${recordingStatus === 'recording' ? 'recording' : ''} ${recordingStatus === 'transcribing' ? 'transcribing' : ''}`}
+                onClick={toggleRecording}
+                aria-label={
+                  recordingStatus === 'recording'
+                    ? 'Stop recording'
+                    : recordingStatus === 'transcribing'
+                    ? 'Transcribing audio'
+                    : 'Start voice input'
+                }
+                title={
+                  recordingStatus === 'recording'
+                    ? 'Stop recording'
+                    : recordingStatus === 'transcribing'
+                    ? 'Transcribing...'
+                    : language === 'hi'
+                    ? 'हिंदी में बोलें'
+                    : 'Speak your message'
+                }
+                disabled={isLoading || recordingStatus === 'transcribing'}
+                id="gg-mic-btn"
+              >
+                {recordingStatus === 'transcribing' ? (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <circle cx="12" cy="12" r="9" strokeOpacity="0.25" />
+                    <path d="M12 3a9 9 0 0 1 9 9" strokeLinecap="round" />
+                  </svg>
+                ) : (
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
                   </svg>
-                </button>
-              )}
+                )}
+              </button>
+
               <button
                 className="gg-send-btn"
                 onClick={() => handleSend()}
@@ -696,6 +738,18 @@ const GeneGuardAssistant = () => {
                 </svg>
               </button>
             </div>
+
+            {/* State indicators below mic */}
+            {recordingStatus === 'recording' && (
+              <div className="gg-recording-label" id="gg-recording-indicator">
+                <span>●</span> Recording...
+              </div>
+            )}
+            {recordingStatus === 'transcribing' && (
+              <div className="gg-transcribing-label" id="gg-transcribing-indicator">
+                <span>⏳</span> Transcribing...
+              </div>
+            )}
           </div>
         </div>
       )}

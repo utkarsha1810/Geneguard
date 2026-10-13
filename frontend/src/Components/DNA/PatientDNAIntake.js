@@ -41,11 +41,12 @@ const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5050/api/dna
 
 // All available Gemini API keys — rotated on 403/429/timeout errors
 const ALL_GEMINI_KEYS = [
+  process.env.REACT_APP_GEMINI_API_KEY,
+  'AIzaSyBqzIN6BWhXzZFELlW38MsXHJHjU46cHmw',
   process.env.REACT_APP_GEMINI_KEY_2,
   process.env.REACT_APP_GEMINI_KEY_3,
   process.env.REACT_APP_GEMINI_KEY_4,
   process.env.REACT_APP_GEMINI_KEY_1,
-  process.env.REACT_APP_GEMINI_API_KEY,
 ].filter(Boolean);
 
 // Track which key index to try next
@@ -221,14 +222,14 @@ ${rawText.substring(0, 15000)}
       const genAI = new GoogleGenerativeAI(apiKey);
       let model;
       try {
-        model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+        model = genAI.getGenerativeModel({ model: 'gemini-3.5-flash' });
       } catch (_) {
-        model = genAI.getGenerativeModel({ model: 'gemini-3.8-flash' });
+        model = genAI.getGenerativeModel({ model: 'gemini-3.5-flash-lite' });
       }
 
       const apiCall = model.generateContent(prompt);
       const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Gemini API timeout')), 3000)
+        setTimeout(() => reject(new Error('Gemini API timeout')), 12000)
       );
 
       const result = await Promise.race([apiCall, timeout]);

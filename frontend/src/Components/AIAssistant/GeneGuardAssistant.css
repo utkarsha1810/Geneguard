@@ -357,6 +357,31 @@
   animation: gg-fade-in 0.2s ease-out;
 }
 
+.gg-recording-label {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  font-size: 11px;
+  color: #ef4444;
+  margin-top: 5px;
+  padding-right: 46px;
+  font-weight: 500;
+  animation: gg-pulse-soft 1.2s infinite;
+}
+
+.gg-transcribing-label {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  font-size: 11px;
+  color: #d97706;
+  margin-top: 5px;
+  padding-right: 46px;
+  font-weight: 500;
+}
+
 .gg-listening-label {
   display: block;
   font-size: 11px;
@@ -440,6 +465,21 @@
   background: #fee2e2;
   color: #ef4444;
   animation: gg-mic-pulse 1s infinite;
+}
+
+/* Transcribing state */
+.gg-mic-btn.transcribing {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.gg-mic-btn.transcribing svg {
+  animation: gg-spin 1s linear infinite;
+}
+
+@keyframes gg-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
 
 @keyframes gg-mic-pulse {

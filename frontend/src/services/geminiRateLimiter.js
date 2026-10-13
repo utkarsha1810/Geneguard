@@ -27,19 +27,15 @@ const KEY_EXHAUSTION_TTL = 60 * 60 * 1000; // 1 hour before retrying exhausted k
 /* ── API Key Pool ───────────────────────────────────────────────────────── */
 const loadKeys = () => {
   const keys = [
+    process.env.REACT_APP_GEMINI_API_KEY,
+    'AIzaSyBqzIN6BWhXzZFELlW38MsXHJHjU46cHmw',
     process.env.REACT_APP_GEMINI_KEY_1,
     process.env.REACT_APP_GEMINI_KEY_2,
     process.env.REACT_APP_GEMINI_KEY_3,
     process.env.REACT_APP_GEMINI_KEY_4,
   ].filter((k) => k && k.trim() && !k.includes('your_'));
 
-  // Fallback to legacy single-key variable
-  if (keys.length === 0) {
-    const legacy = process.env.REACT_APP_GEMINI_API_KEY;
-    if (legacy && legacy.trim()) keys.push(legacy.trim());
-  }
-
-  return keys;
+  return Array.from(new Set(keys));
 };
 
 const API_KEYS = loadKeys();
@@ -53,8 +49,8 @@ console.log(`[RateLimiter] 🔑 Loaded ${API_KEYS.length} API key(s)`);
 API_KEYS.forEach((k, i) => console.log(`  Key ${i + 1}: ${k.substring(0, 8)}...`));
 
 /* ── Model Management ───────────────────────────────────────────────────── */
-const MODEL_NAME = 'gemini-2.0-flash';
-const FALLBACK_MODEL = 'gemini-3.8-flash';
+const MODEL_NAME = 'gemini-3.5-flash';
+const FALLBACK_MODEL = 'gemini-3.5-flash-lite';
 const generationConfig = { maxOutputTokens: 1200, temperature: 0.7 };
 
 // Registered model reinitializers from consuming services
