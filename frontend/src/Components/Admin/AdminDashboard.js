@@ -38,6 +38,19 @@ import {
   Heart,
   Briefcase,
   Layers,
+  Info,
+  CircleCheck,
+  ListFilter,
+  Wrench,
+  Bell,
+  Menu,
+  ChevronLeft,
+  ChevronRight,
+  HardDrive,
+  Shield,
+  CircleAlert,
+  ChartNoAxesColumnIncreasing,
+  Settings2,
 } from 'lucide-react';
 import './AdminDashboard.css';
 
@@ -63,11 +76,77 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
+// Compact presentation helpers --- used exclusively by System Overview.
+const GGUnavailable = () => <span className="gg-ref-unavailable" title="Not supplied by the admin API">---</span>;
+
+const GGCount = ({ value, className = '' }) => (
+  <span className={className}>
+    {Number.isFinite(Number(value)) && value !== null && value !== undefined ? Number(value).toLocaleString() : <GGUnavailable />}
+  </span>
+);
+
+const GGStatusIcon = ({ muted = false }) => muted
+  ? <Info size={17} className="gg-ref-info" aria-label="Information" />
+  : <CircleCheck size={18} className="gg-ref-check" aria-label="Data available" />;
+
+const GGCard = ({ icon: Icon, title, onClick, muted, children }) => (
+  <section className={`gg-ref-card ${muted ? 'gg-ref-card-muted' : 'gg-ref-card-ok'}`}>
+    <header className="gg-ref-card-header">
+      {onClick ? (
+        <button type="button" className="gg-ref-card-title gg-ref-card-title-button" onClick={onClick}>
+          <Icon size={18} strokeWidth={2.5} /><span>{title}</span>
+        </button>
+      ) : (
+        <div className="gg-ref-card-title"><Icon size={18} strokeWidth={2.5} /><span>{title}</span></div>
+      )}
+      <GGStatusIcon muted={muted} />
+    </header>
+    <div className="gg-ref-card-content">{children}</div>
+  </section>
+);
+
+const GGTriple = ({ items }) => (
+  <div className="gg-ref-triple">
+    {items.map((item, index) => (
+      <div className="gg-ref-triple-item" key={index}>
+        <strong className={item.tone ? `gg-tone-${item.tone}` : ''}>
+          {item.value === null || item.value === undefined ? <GGUnavailable /> : <GGCount value={item.value} />}
+        </strong>
+        <span>{item.label}</span>
+      </div>
+    ))}
+  </div>
+);
+
+const GGScale = ({ label, value, total = 100, prefix = '' }) => {
+  const valid = Number.isFinite(Number(value)) && Number.isFinite(Number(total)) && Number(total) > 0;
+  const percentage = valid ? Math.max(0, Math.min(100, (Number(value) / Number(total)) * 100)) : 0;
+
+  return (
+    <div className="gg-ref-scale">
+      <div className="gg-ref-scale-head">
+        <strong>{label}</strong>
+        <span>{valid ? `$${prefix}${Math.round(percentage)}%` : 'N/A'}</span>
+      </div>
+      <div className="gg-ref-scale-track" role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={valid ? Math.round(percentage) : undefined}>
+        <span className="gg-ref-scale-fill" style={{ width: `${percentage}%` }} />
+      </div>
+      <div className="gg-ref-scale-ticks"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>
+    </div>
+  );
+};
+
+const GGDetail = ({ label, value, tone }) => (
+  <div className="gg-ref-detail"><span>{label}</span><strong className={tone ? `gg-tone-${tone}` : ''}>{value ?? <GGUnavailable />}</strong></div>
+);
+
 const AdminDashboard = () => {
   const navigate = useNavigate();
 
   // Active Tab
   const [activeTab, setActiveTab] = useState('overview');
+  const [overviewNavOpen, setOverviewNavOpen] = useState(false);
+  const [summarySelection, setSummarySelection] = useState(null);
 
   // Auth / User State
   const [user, setUser] = useState(null);
@@ -82,20 +161,16 @@ const AdminDashboard = () => {
     activeSessions: 0,
     highRiskPatients: 0,
   });
-
   const [users, setUsers] = useState([]);
   const [usersPage, setUsersPage] = useState(1);
   const [usersTotalPages, setUsersTotalPages] = useState(1);
   const [userSearch, setUserSearch] = useState('');
-
   const [doctors, setDoctors] = useState([]);
   const [patients, setPatients] = useState([]);
   const [patientSearch, setPatientSearch] = useState('');
   const [patientRiskFilter, setPatientRiskFilter] = useState('');
-
   const [appointments, setAppointments] = useState([]);
   const [appointmentFilter, setAppointmentFilter] = useState('all');
-
   const [analytics, setAnalytics] = useState(null);
   const [logs, setLogs] = useState([]);
   const [envKeys, setEnvKeys] = useState([]);
@@ -259,7 +334,6 @@ const AdminDashboard = () => {
       ]);
       const logsData = await logsRes.json();
       const keysData = await keysRes.json();
-
       if (logsData.success) setLogs(logsData.logs);
       if (keysData.success) setEnvKeys(keysData.envKeys);
     } catch (e) {
@@ -270,9 +344,10 @@ const AdminDashboard = () => {
   // Trigger Data Fetch per Tab
   useEffect(() => {
     if (!token) return;
-
-    if (activeTab === 'overview') fetchStats();
-    else if (activeTab === 'users') fetchUsers(usersPage, userSearch);
+    if (activeTab === 'overview') {
+      fetchStats();
+      fetchSettings();
+    } else if (activeTab === 'users') fetchUsers(usersPage, userSearch);
     else if (activeTab === 'doctors') fetchDoctors();
     else if (activeTab === 'patients') fetchPatients(patientSearch, patientRiskFilter);
     else if (activeTab === 'appointments') fetchAppointments(appointmentFilter);
@@ -281,7 +356,6 @@ const AdminDashboard = () => {
   }, [activeTab, token, fetchStats, fetchUsers, fetchDoctors, fetchPatients, fetchAppointments, fetchAnalytics, fetchSettings, usersPage, userSearch, patientSearch, patientRiskFilter, appointmentFilter]);
 
   // ── Handlers ──
-
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -348,7 +422,6 @@ const AdminDashboard = () => {
       const isEdit = Boolean(modalData?._id);
       const url = isEdit ? `${API_BASE}/admin/doctors/${modalData._id}` : `${API_BASE}/admin/doctors`;
       const method = isEdit ? 'PATCH' : 'POST';
-
       const res = await fetch(url, {
         method,
         headers: getAuthHeaders(),
@@ -510,7 +583,7 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="admin-page-layout">
+    <div className="admin-page-layout gg-reference-active">
       {/* Notification Toast */}
       {notification && (
         <div className={`admin-notification-toast ${notification.type}`}>
@@ -523,12 +596,11 @@ const AdminDashboard = () => {
       <header className="admin-header-navbar">
         <div className="admin-navbar-left">
           <Link to="/home" className="admin-logo-brand">
-            <div className="admin-logo-circle">🧬</div>
+            <div className="admin-logo-circle"><ShieldCheck size={19} /></div>
             <span className="admin-brand-name">GeneGuard</span>
           </Link>
           <span className="admin-panel-badge">Admin Panel</span>
         </div>
-
         <div className="admin-navbar-right">
           <div className="admin-user-info">
             <div className="admin-avatar">
@@ -558,53 +630,52 @@ const AdminDashboard = () => {
               className={`sidebar-nav-item ${activeTab === 'overview' ? 'active' : ''}`}
               onClick={() => setActiveTab('overview')}
             >
-              <span className="nav-icon">📊</span>
+              <span className="nav-icon"><ChartNoAxesColumnIncreasing size={19} strokeWidth={2} /></span>
               <span className="nav-text">Overview</span>
             </button>
             <button
               className={`sidebar-nav-item ${activeTab === 'users' ? 'active' : ''}`}
               onClick={() => setActiveTab('users')}
             >
-              <span className="nav-icon">👥</span>
+              <span className="nav-icon"><Users size={19} strokeWidth={2} /></span>
               <span className="nav-text">User Management</span>
             </button>
             <button
               className={`sidebar-nav-item ${activeTab === 'doctors' ? 'active' : ''}`}
               onClick={() => setActiveTab('doctors')}
             >
-              <span className="nav-icon">🩺</span>
+              <span className="nav-icon"><Stethoscope size={19} strokeWidth={2} /></span>
               <span className="nav-text">Doctor Management</span>
             </button>
             <button
               className={`sidebar-nav-item ${activeTab === 'patients' ? 'active' : ''}`}
               onClick={() => setActiveTab('patients')}
             >
-              <span className="nav-icon">📋</span>
+              <span className="nav-icon"><FileText size={19} strokeWidth={2} /></span>
               <span className="nav-text">Patient Data</span>
             </button>
             <button
               className={`sidebar-nav-item ${activeTab === 'appointments' ? 'active' : ''}`}
               onClick={() => setActiveTab('appointments')}
             >
-              <span className="nav-icon">📅</span>
+              <span className="nav-icon"><Calendar size={19} strokeWidth={2} /></span>
               <span className="nav-text">Consultations</span>
             </button>
             <button
               className={`sidebar-nav-item ${activeTab === 'analytics' ? 'active' : ''}`}
               onClick={() => setActiveTab('analytics')}
             >
-              <span className="nav-icon">📈</span>
+              <span className="nav-icon"><TrendingUp size={19} strokeWidth={2} /></span>
               <span className="nav-text">Analytics</span>
             </button>
             <button
               className={`sidebar-nav-item ${activeTab === 'settings' ? 'active' : ''}`}
               onClick={() => setActiveTab('settings')}
             >
-              <span className="nav-icon">⚙️</span>
+              <span className="nav-icon"><Settings2 size={19} strokeWidth={2} /></span>
               <span className="nav-text">System Settings</span>
             </button>
           </div>
-
           <div className="admin-sidebar-footer">
             <div className="system-status-indicator">
               <span className={`status-dot ${isMaintenanceMode ? 'maintenance' : 'online'}`}></span>
@@ -617,98 +688,155 @@ const AdminDashboard = () => {
         <main className="admin-main-content">
           {/* TAB 1: OVERVIEW */}
           {activeTab === 'overview' && (
-            <div className="admin-tab-pane">
-              <div className="pane-header">
+            <div className="admin-tab-pane gg-reference-overview gg-six-overview">
+              <div className="gg-ref-page-heading">
                 <h2>System Overview</h2>
-                <p>Real-time metrics and quick control center for GeneGuard platform</p>
+                <p>GeneGuard platform statistics and administrative controls</p>
               </div>
 
-              <div className="stats-cards-grid">
-                <div className="stat-card">
-                  <div className="stat-icon teal">👥</div>
-                  <div className="stat-body">
-                    <span className="stat-value">{stats.totalUsers}</span>
-                    <span className="stat-label">Registered Users</span>
-                  </div>
-                </div>
+              <div className="gg-ref-grid gg-six-grid">
+                <GGCard icon={Users} title="Registered Users" onClick={() => setActiveTab('users')}>
+                  <div className="gg-six-number"><GGCount value={stats.totalUsers} /></div>
+                  <p className="gg-six-description">Total registered accounts</p>
+                  <GGScale label="User count" value={stats.totalUsers} total={100} />
+                </GGCard>
 
-                <div className="stat-card">
-                  <div className="stat-icon green">🩺</div>
-                  <div className="stat-body">
-                    <span className="stat-value">{stats.totalDoctors}</span>
-                    <span className="stat-label">Doctors in Directory</span>
-                  </div>
-                </div>
+                <GGCard icon={Stethoscope} title="Doctor Directory" onClick={() => setActiveTab('doctors')}>
+                  <div className="gg-six-number"><GGCount value={stats.totalDoctors} /></div>
+                  <p className="gg-six-description">Doctors listed in the directory</p>
+                  <GGScale label="Doctor count" value={stats.totalDoctors} total={100} />
+                </GGCard>
 
-                <div className="stat-card">
-                  <div className="stat-icon blue">📅</div>
-                  <div className="stat-body">
-                    <span className="stat-value">{stats.totalAppointments}</span>
-                    <span className="stat-label">Appointments Booked</span>
-                  </div>
-                </div>
+                <GGCard icon={Calendar} title="Appointments" onClick={() => setActiveTab('appointments')}>
+                  <div className="gg-six-number"><GGCount value={stats.totalAppointments} /></div>
+                  <p className="gg-six-description">Appointments booked</p>
+                  <GGScale label="Appointment count" value={stats.totalAppointments} total={100} />
+                </GGCard>
 
-                <div className="stat-card">
-                  <div className="stat-icon purple">📋</div>
-                  <div className="stat-body">
-                    <span className="stat-value">{stats.totalIntakes}</span>
-                    <span className="stat-label">Intake Forms Submitted</span>
-                  </div>
-                </div>
+                <GGCard icon={FileText} title="Intake Forms" onClick={() => setActiveTab('patients')}>
+                  <div className="gg-six-number"><GGCount value={stats.totalIntakes} /></div>
+                  <p className="gg-six-description">Patient intake forms submitted</p>
+                  <GGScale label="Intake count" value={stats.totalIntakes} total={100} />
+                </GGCard>
 
-                <div className="stat-card">
-                  <div className="stat-icon orange">⚡</div>
-                  <div className="stat-body">
-                    <span className="stat-value">{stats.activeSessions}</span>
-                    <span className="stat-label">Active Sessions</span>
-                  </div>
-                </div>
+                <GGCard icon={Activity} title="Active Sessions">
+                  <div className="gg-six-number"><GGCount value={stats.activeSessions} /></div>
+                  <p className="gg-six-description">Currently active platform sessions</p>
+                  <GGScale label="Active session count" value={stats.activeSessions} total={100} />
+                </GGCard>
 
-                <div className="stat-card">
-                  <div className="stat-icon red">🚨</div>
-                  <div className="stat-body">
-                    <span className="stat-value">{stats.highRiskPatients}</span>
-                    <span className="stat-label">High Risk Flagged Patients</span>
-                  </div>
-                </div>
+                <GGCard icon={AlertTriangle} title="Risk Flagged" onClick={() => { setPatientRiskFilter('high'); setActiveTab('patients'); }}>
+                  <div className="gg-six-number gg-six-risk"><GGCount value={stats.highRiskPatients} /></div>
+                  <p className="gg-six-description">Patients flagged as high risk</p>
+                  <GGScale label="High-risk flags" value={stats.highRiskPatients} total={100} />
+                </GGCard>
               </div>
 
-              <div className="overview-quick-actions-card">
-                <h3>Quick Management Shortcuts</h3>
-                <div className="shortcuts-grid">
-                  <button className="shortcut-btn" onClick={() => setActiveTab('users')}>
-                    <span className="shortcut-icon">👥</span>
-                    <span>Manage Users</span>
-                  </button>
-                  <button
-                    className="shortcut-btn"
-                    onClick={() => {
-                      setActiveTab('doctors');
-                      setDoctorForm({
-                        name: '',
-                        email: '',
-                        phone: '',
-                        specialty: 'Medical Geneticist',
-                        location: 'City Hospital',
-                        experience: '5+ years',
-                      });
-                      setModalData(null);
-                      setActiveModal('addDoctor');
-                    }}
-                  >
-                    <span className="shortcut-icon">🩺</span>
-                    <span>Add New Doctor</span>
-                  </button>
-                  <button className="shortcut-btn" onClick={() => setActiveTab('patients')}>
-                    <span className="shortcut-icon">📋</span>
-                    <span>View Patient Data</span>
-                  </button>
-                  <button className="shortcut-btn" onClick={() => setActiveTab('settings')}>
-                    <span className="shortcut-icon">⚙️</span>
-                    <span>View System Logs</span>
-                  </button>
-                </div>
+              <div className="gg-six-scale-note">
+                Scales use a 0–100 reference. For example, a count of 18 fills 18% of its bar; these are counts, not capacity or clinical risk percentages.
               </div>
+
+              <section className="gg-six-shortcuts gg-module-panel">
+                <header className="gg-six-shortcuts-heading">
+                  <button type="button" className="gg-module-launch" aria-expanded={overviewNavOpen} onClick={() => setOverviewNavOpen(open => !open)}>
+                    <Layers size={18} />
+                    <span>Quick Management Shortcuts</span>
+                    <ChevronRight size={16} className={overviewNavOpen ? 'gg-chevron-open' : ''} />
+                  </button>
+                  <button type="button" className="gg-six-shortcuts-toggle" aria-expanded={overviewNavOpen} onClick={() => setOverviewNavOpen(open => !open)}>
+                    {overviewNavOpen ? 'Hide shortcuts' : 'Show shortcuts'}
+                  </button>
+                </header>
+                {overviewNavOpen && (
+                  <div className="gg-module-panel-content">
+                    <div className="gg-module-panel-label">MANAGEMENT MODULES</div>
+                    <p className="gg-module-panel-hint">Select a module to see a summary of its current data. From there, open the full management page.</p>
+                    <div className="gg-module-panel-items">
+                      <button type="button" onClick={() => setSummarySelection('users')}>
+                        <Users size={18} /><span><strong>User management</strong><small>View registered accounts, activity and administration tools</small></span><ChevronRight size={16} />
+                      </button>
+                      <button type="button" onClick={() => setSummarySelection('doctors')}>
+                        <Stethoscope size={18} /><span><strong>Doctor directory</strong><small>Review practitioners and doctor management information</small></span><ChevronRight size={16} />
+                      </button>
+                      <button type="button" onClick={() => setSummarySelection('patients')}>
+                        <FileText size={18} /><span><strong>Patient data</strong><small>Explore patient intake and available records</small></span><ChevronRight size={16} />
+                      </button>
+                      <button type="button" onClick={() => setSummarySelection('appointments')}>
+                        <Calendar size={18} /><span><strong>Appointments</strong><small>Check consultation bookings and appointment records</small></span><ChevronRight size={16} />
+                      </button>
+                      <button type="button" onClick={() => setSummarySelection('sessions')}>
+                        <Activity size={18} /><span><strong>Active sessions</strong><small>See the currently reported platform session count</small></span><ChevronRight size={16} />
+                      </button>
+                      <button type="button" onClick={() => setSummarySelection('risk')}>
+                        <AlertTriangle size={18} /><span><strong>Risk monitoring</strong><small>Review the number of patients flagged for follow-up</small></span><ChevronRight size={16} />
+                      </button>
+                      <button type="button" onClick={() => setSummarySelection('analytics')}>
+                        <TrendingUp size={18} /><span><strong>Analytics</strong><small>Open platform charts and reporting summaries</small></span><ChevronRight size={16} />
+                      </button>
+                      <button type="button" onClick={() => setSummarySelection('settings')}>
+                        <Settings2 size={18} /><span><strong>System settings</strong><small>Access configuration controls and system logs</small></span><ChevronRight size={16} />
+                      </button>
+                    </div>
+                    <div className="gg-module-panel-footer"><span>Choose any section to preview its data.</span><button type="button" onClick={() => setOverviewNavOpen(false)}>Hide shortcuts</button></div>
+                  </div>
+                )}
+              </section>
+
+              {summarySelection && (
+                <div className="gg-summary-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSummarySelection(null); }}>
+                  <section className="gg-summary-dialog" role="dialog" aria-modal="true" aria-label="GeneGuard management summary">
+                    <header className="gg-summary-head">
+                      <div><h3>Management Summary</h3><p>Explore the six live statistics and administration modules</p></div>
+                      <button type="button" className="gg-summary-close" onClick={() => setSummarySelection(null)} aria-label="Close summary">×</button>
+                    </header>
+                    <div className="gg-summary-body">
+                      <nav className="gg-summary-menu" aria-label="Summary sections">
+                        {[
+                          ['users', 'Registered Users', Users], ['doctors', 'Doctor Directory', Stethoscope],
+                          ['appointments', 'Appointments', Calendar], ['patients', 'Intake Forms', FileText],
+                          ['sessions', 'Active Sessions', Activity], ['risk', 'Risk Flagged', AlertTriangle],
+                          ['analytics', 'Analytics', TrendingUp], ['settings', 'System Settings', Settings2],
+                        ].map(([id, label, Icon]) => <button key={id} type="button" className={summarySelection === id ? 'selected' : ''} onClick={() => setSummarySelection(id)}><Icon size={16} />{label}</button>)}
+                      </nav>
+                      <div className="gg-summary-content">
+                        {(() => {
+                          const panels = {
+                            users: { title: 'Registered Users', value: stats.totalUsers, description: 'Accounts registered on GeneGuard', tab: 'users' },
+                            doctors: { title: 'Doctor Directory', value: stats.totalDoctors, description: 'Doctors in the platform directory', tab: 'doctors' },
+                            appointments: { title: 'Appointments', value: stats.totalAppointments, description: 'Appointments booked on GeneGuard', tab: 'appointments' },
+                            patients: { title: 'Intake Forms', value: stats.totalIntakes, description: 'Patient intake forms submitted', tab: 'patients' },
+                            sessions: { title: 'Active Sessions', value: stats.activeSessions, description: 'Currently active platform sessions', tab: null },
+                            risk: { title: 'Risk Flagged', value: stats.highRiskPatients, description: 'Patients flagged for high-risk review', tab: 'patients' },
+                            analytics: { title: 'Analytics', value: stats.totalAppointments, description: 'Appointments recorded (open Analytics for detailed charts)', tab: 'analytics' },
+                            settings: { title: 'System Settings', value: null, description: isMaintenanceMode ? 'Maintenance mode enabled' : 'Maintenance mode disabled', tab: 'settings' },
+                          };
+                          const item = panels[summarySelection];
+                          return <>
+                            <div className="gg-summary-eyebrow">GENEGUARD / ADMINISTRATION</div>
+                            <h4>{item.title}</h4>
+                            <p>{item.description}</p>
+                            {item.value !== null && <>
+                              <div className="gg-summary-big-number"><GGCount value={item.value} /></div>
+                              <GGScale label={`${item.title} / 100 reference`} value={item.value} total={100} />
+                            </>}
+                            <div className="gg-summary-quick-stats">
+                              {[
+                                ['Registered users', stats.totalUsers], ['Doctors', stats.totalDoctors],
+                                ['Appointments', stats.totalAppointments], ['Intakes', stats.totalIntakes],
+                                ['Active sessions', stats.activeSessions], ['High-risk flagged', stats.highRiskPatients],
+                              ].map(([label, value]) => <div key={label}><span>{label}</span><strong><GGCount value={value} /></strong></div>)}
+                            </div>
+                            {item.tab && <button className="gg-summary-action" type="button" onClick={() => {
+                              if (summarySelection === 'risk') setPatientRiskFilter('high');
+                              setActiveTab(item.tab); setSummarySelection(null);
+                            }}>Open {item.title} section <ChevronRight size={16} /></button>}
+                          </>;
+                        })()}
+                      </div>
+                    </div>
+                  </section>
+                </div>
+              )}
             </div>
           )}
 
@@ -1613,7 +1741,6 @@ const AdminDashboard = () => {
                       </div>
                       <strong className="health-status-ok">{analytics.platformHealth?.backendStatus || 'Online (Express v4)'}</strong>
                     </div>
-
                     <div className="health-row">
                       <div className="health-row-info">
                         <Database size={16} />
@@ -1621,7 +1748,6 @@ const AdminDashboard = () => {
                       </div>
                       <strong className="health-status-ok">{analytics.platformHealth?.databaseStatus || 'Connected (MongoDB)'}</strong>
                     </div>
-
                     <div className="health-row">
                       <div className="health-row-info">
                         <Zap size={16} />
@@ -1629,7 +1755,6 @@ const AdminDashboard = () => {
                       </div>
                       <strong className="health-status-ok">{analytics.platformHealth?.apiLatencyMs || '18ms'}</strong>
                     </div>
-
                     <div className="health-row">
                       <div className="health-row-info">
                         <ShieldCheck size={16} />
@@ -1639,7 +1764,6 @@ const AdminDashboard = () => {
                     </div>
                   </div>
                 </div>
-
               </div>
             </div>
           )}
@@ -1663,9 +1787,7 @@ const AdminDashboard = () => {
                         type="password"
                         required
                         value={adminCodeForm.currentCode}
-                        onChange={(e) =>
-                          setAdminCodeForm({ ...adminCodeForm, currentCode: e.target.value })
-                        }
+                        onChange={(e) => setAdminCodeForm({ ...adminCodeForm, currentCode: e.target.value })}
                       />
                     </div>
                     <div className="form-group">
@@ -1675,9 +1797,7 @@ const AdminDashboard = () => {
                         required
                         minLength={6}
                         value={adminCodeForm.newCode}
-                        onChange={(e) =>
-                          setAdminCodeForm({ ...adminCodeForm, newCode: e.target.value })
-                        }
+                        onChange={(e) => setAdminCodeForm({ ...adminCodeForm, newCode: e.target.value })}
                       />
                     </div>
                     <button type="submit" className="primary-action-btn mt-2">
@@ -1701,7 +1821,6 @@ const AdminDashboard = () => {
                       {isMaintenanceMode ? 'ENABLED' : 'DISABLED'}
                     </button>
                   </div>
-
                   <div className="control-row mt-4">
                     <div>
                       <span className="control-title">Regenerate JWT Secret</span>
@@ -1831,7 +1950,6 @@ const AdminDashboard = () => {
                   />
                 </div>
               </div>
-
               <div className="form-row">
                 <div className="form-group">
                   <label>Qualification</label>
@@ -1851,7 +1969,6 @@ const AdminDashboard = () => {
                   />
                 </div>
               </div>
-
               <div className="form-row">
                 <div className="form-group">
                   <label>Location (City, State)</label>
@@ -1871,7 +1988,6 @@ const AdminDashboard = () => {
                   />
                 </div>
               </div>
-
               <div className="form-row">
                 <div className="form-group">
                   <label>Registration Number</label>
@@ -1892,7 +2008,6 @@ const AdminDashboard = () => {
                   />
                 </div>
               </div>
-
               <div className="form-row">
                 <div className="form-group">
                   <label>Phone Number</label>
@@ -1911,7 +2026,6 @@ const AdminDashboard = () => {
                   />
                 </div>
               </div>
-
               <div className="modal-actions">
                 <button type="button" className="secondary-btn" onClick={() => setActiveModal(null)}>
                   Cancel

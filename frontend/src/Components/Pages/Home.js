@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import LogoutModal from '../Auth/LogoutModal';
+import { isAuthenticated, getUser, logout } from '../../utils/auth';
 import './Home.css';
 
 // Translation data
@@ -224,12 +226,16 @@ const translations = {
 
 // ─── Navbar ───────────────────────────────────────────────────────────────────
 const Navbar = ({ language, setLanguage }) => {
+  const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const dropdownRef = useRef(null);
 
   const t = translations[language];
+  const authed = isAuthenticated();
+  const user = getUser();
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -261,7 +267,7 @@ const Navbar = ({ language, setLanguage }) => {
     <>
       <nav className={`home-main-navbar ${isScrolled ? 'home-navbar-scrolled' : ''}`}>
         <div className="home-nav-content">
-          <div className="home-nav-logo">
+          <div className="home-nav-logo" onClick={() => navigate('/home')}>
             <div className="home-logo-circle"></div>
             <span className="home-logo-brand">Gene Guard</span>
           </div>
@@ -306,14 +312,52 @@ const Navbar = ({ language, setLanguage }) => {
               {isProfileOpen && (
                 <div className="home-profile-dropdown">
                   <div className="home-dropdown-glow"></div>
-                  <Link to="/login" className="home-dropdown-item home-signup-special">{t.navLinks.login}</Link>
-                  <Link to="/register" className="home-dropdown-item home-signup-special">{t.navLinks.signup}</Link>
+                  {authed ? (
+                    <>
+                      <div className="profile-dropdown-user-info">
+                        <div className="user-name">{user?.firstName || 'User'}</div>
+                        <div className="user-role-label">{user?.role?.toUpperCase()}</div>
+                      </div>
+                      <Link to="/settings" className="home-dropdown-item" onClick={() => setIsProfileOpen(false)}>
+                        ⚙️ Settings
+                      </Link>
+                      {user?.role === 'admin' && (
+                        <Link to="/admin" className="home-dropdown-item" onClick={() => setIsProfileOpen(false)}>
+                          🛡️ Admin Dashboard
+                        </Link>
+                      )}
+                      <button
+                        type="button"
+                        className="home-dropdown-item dropdown-logout-btn"
+                        onClick={() => {
+                          setIsProfileOpen(false);
+                          setIsLogoutModalOpen(true);
+                        }}
+                      >
+                        🚪 Log Out
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link to="/login" className="home-dropdown-item home-signup-special">{t.navLinks.login}</Link>
+                      <Link to="/register" className="home-dropdown-item home-signup-special">{t.navLinks.signup}</Link>
+                    </>
+                  )}
                 </div>
               )}
             </div>
           </div>
         </div>
       </nav>
+
+      <LogoutModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={async () => {
+          setIsLogoutModalOpen(false);
+          await logout(navigate, 'Logged out successfully');
+        }}
+      />
 
       {isMobileMenuOpen && (
         <div className="home-mobile-menu-overlay">

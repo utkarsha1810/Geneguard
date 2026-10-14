@@ -95,6 +95,10 @@ const PatientSchema = new mongoose.Schema(
       enum: ['low', 'medium', 'high'],
       default: 'low',
     },
+    isSeeded: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

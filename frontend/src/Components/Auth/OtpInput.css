@@ -1,0 +1,191 @@
+/* ─── GeneGuard OTP Input Component Styling ───────────────────────────── */
+
+.otp-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin: 16px 0;
+  box-sizing: border-box;
+}
+
+.otp-email-notice {
+  font-size: 0.95rem;
+  color: #94a3b8;
+  text-align: center;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.otp-highlight-email {
+  color: #53c7e8;
+  font-weight: 600;
+  word-break: break-all;
+}
+
+/* ─── 6 Digit Boxes Grid ─── */
+.otp-boxes-wrapper {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 420px;
+  margin: 8px 0 16px 0;
+}
+
+.otp-digit-box {
+  width: 48px;
+  height: 56px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1.5px solid rgba(83, 199, 232, 0.3);
+  border-radius: 12px;
+  color: #f8fafc;
+  font-size: 1.75rem;
+  font-weight: 700;
+  font-family: 'Consolas', 'Monaco', monospace;
+  text-align: center;
+  outline: none;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  box-sizing: border-box;
+}
+
+@media (max-width: 480px) {
+  .otp-digit-box {
+    width: 40px;
+    height: 50px;
+    font-size: 1.45rem;
+    gap: 6px;
+  }
+  .otp-boxes-wrapper {
+    gap: 6px;
+  }
+}
+
+.otp-digit-box:focus {
+  border-color: #53c7e8;
+  background: rgba(15, 23, 42, 0.95);
+  box-shadow: 0 0 0 3px rgba(83, 199, 232, 0.25), 0 0 20px rgba(83, 199, 232, 0.35);
+  transform: translateY(-2px);
+}
+
+.otp-digit-box.filled {
+  border-color: rgba(83, 199, 232, 0.6);
+  background: rgba(14, 28, 54, 0.85);
+  color: #53c7e8;
+}
+
+.otp-digit-box.has-error {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
+.otp-digit-box:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─── Expiry Countdown ─── */
+.otp-expiry-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 4px;
+  margin-bottom: 12px;
+  font-size: 0.88rem;
+}
+
+.otp-timer-active {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #94a3b8;
+}
+
+.otp-timer-active strong {
+  color: #10b981;
+  font-weight: 600;
+  font-family: monospace;
+  font-size: 0.95rem;
+}
+
+.otp-timer-expired {
+  color: #f87171;
+  font-weight: 500;
+}
+
+/* ─── Error & Success Banners ─── */
+.otp-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 8px;
+  color: #fca5a5;
+  font-size: 0.88rem;
+  padding: 10px 14px;
+  width: 100%;
+  max-width: 420px;
+  margin: 8px 0 14px;
+  box-sizing: border-box;
+}
+
+.otp-success-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: 8px;
+  color: #6ee7b7;
+  font-size: 0.88rem;
+  padding: 10px 14px;
+  width: 100%;
+  max-width: 420px;
+  margin: 8px 0 14px;
+  box-sizing: border-box;
+}
+
+/* ─── Actions Footer & Resend Button ─── */
+.otp-actions-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: 0.9rem;
+}
+
+.otp-resend-label {
+  color: #94a3b8;
+}
+
+.otp-resend-btn {
+  background: none;
+  border: none;
+  color: #53c7e8;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.otp-resend-btn:hover:not(:disabled) {
+  color: #38bdf8;
+  background: rgba(83, 199, 232, 0.1);
+}
+
+.otp-resend-btn:disabled {
+  color: #64748b;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.otp-loading-text {
+  opacity: 0.8;
+}

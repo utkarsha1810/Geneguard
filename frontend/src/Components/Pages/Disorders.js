@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import LogoutModal from '../Auth/LogoutModal';
+import { isAuthenticated, getUser, logout } from '../../utils/auth';
 import './Disorders.css';
 import './Home.css';
 
@@ -95,9 +97,12 @@ const Navbar = ({ language, setLanguage }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const dropdownRef = useRef(null);
 
   const t = (key) => translations[language][key] || key;
+  const authed = isAuthenticated();
+  const user = getUser();
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -174,14 +179,53 @@ const Navbar = ({ language, setLanguage }) => {
               </button>
               {isProfileOpen && (
                 <div className="home-profile-dropdown">
-                  <Link to="/login" className="home-dropdown-item home-signup-special">{t('nav_login')}</Link>
-                  <Link to="/signup" className="home-dropdown-item home-signup-special">{t('nav_signup')}</Link>
+                  <div className="home-dropdown-glow"></div>
+                  {authed ? (
+                    <>
+                      <div className="profile-dropdown-user-info">
+                        <div className="user-name">{user?.firstName || 'User'}</div>
+                        <div className="user-role-label">{user?.role?.toUpperCase()}</div>
+                      </div>
+                      <Link to="/settings" className="home-dropdown-item" onClick={() => setIsProfileOpen(false)}>
+                        ⚙️ Settings
+                      </Link>
+                      {user?.role === 'admin' && (
+                        <Link to="/admin" className="home-dropdown-item" onClick={() => setIsProfileOpen(false)}>
+                          🛡️ Admin Dashboard
+                        </Link>
+                      )}
+                      <button
+                        type="button"
+                        className="home-dropdown-item dropdown-logout-btn"
+                        onClick={() => {
+                          setIsProfileOpen(false);
+                          setIsLogoutModalOpen(true);
+                        }}
+                      >
+                        🚪 Log Out
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link to="/login" className="home-dropdown-item home-signup-special">{t('nav_login')}</Link>
+                      <Link to="/signup" className="home-dropdown-item home-signup-special">{t('nav_signup')}</Link>
+                    </>
+                  )}
                 </div>
               )}
             </div>
           </div>
         </div>
       </nav>
+
+      <LogoutModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={async () => {
+          setIsLogoutModalOpen(false);
+          await logout(navigate, 'Logged out successfully');
+        }}
+      />
 
       {isMobileMenuOpen && (
         <div className="home-mobile-menu-overlay">

@@ -48,6 +48,12 @@ import {
 
 // Utils imports
 import { logger } from './utils/logger.js';
+import {
+  verifyEmailTransporter,
+  getActiveEmailProvider,
+  isSmtpConfigured,
+  isResendConfigured,
+} from './utils/sendEmail.js';
 
 
 
@@ -58,11 +64,25 @@ const app = express();
 // MIDDLEWARE
 // ============================================================================
 
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  process.env.FRONTEND_URL,
+].filter(Boolean);
+
 app.use(helmet());
-app.use(cors({
-  origin: true,
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development') {
+        return callback(null, true);
+      }
+      return callback(new Error('CORS policy: Not allowed by origin'));
+    },
+    credentials: true,
+  })
+);
 app.use(express.json({ limit: '50mb' }));
 app.use(requestValidationMiddleware);
 
@@ -224,6 +244,26 @@ const startServer = async () => {
         logger('✗ Gemini API connection failed (will use rule-based fallback)', 'warn');
       }
     }
+  }
+
+  // Email Service Configuration & Verification
+  const activeProvider = getActiveEmailProvider();
+  logger(`Email service provider active: ${activeProvider.toUpperCase()}`);
+
+  if (activeProvider === 'smtp') {
+    logger('Verifying Gmail SMTP connection...');
+    const verifyResult = await verifyEmailTransporter();
+    if (verifyResult.ready) {
+      logger('✓ SMTP ready');
+    } else {
+      logger(`✗ SMTP verification error: ${verifyResult.error}`, 'error');
+      logger('⚠️ Check SMTP_USER and 16-character Google App Password (SMTP_PASS) in backend/.env', 'warn');
+    }
+  } else if (activeProvider === 'resend') {
+    logger('ℹ️ Active provider: Resend fallback (SMTP credentials missing/incomplete)');
+    logger('ℹ️ Resend free domain: OTPs only deliver to the account owner\'s email.');
+  } else {
+    logger('⚠️ Neither Gmail SMTP nor Resend configured. Dev console OTP fallback active.', 'warn');
   }
 
   app.listen(PORT, () => {

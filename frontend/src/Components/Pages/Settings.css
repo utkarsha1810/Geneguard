@@ -1,0 +1,483 @@
+.settings-page {
+  min-height: 100vh;
+  background: linear-gradient(160deg, #060b18 0%, #0d1a33 50%, #060b18 100%);
+  color: #e2e8f0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  padding-bottom: 60px;
+}
+
+.settings-header {
+  border-bottom: 1px solid rgba(83, 199, 232, 0.2);
+  background: rgba(6, 11, 24, 0.85);
+  backdrop-filter: blur(12px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.settings-header-content {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.settings-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.settings-logo-icon {
+  font-size: 24px;
+}
+
+.settings-logo-brand {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.settings-header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.settings-nav-link {
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.settings-nav-link:hover {
+  color: #53c7e8;
+}
+
+.settings-nav-link.admin-tag {
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.settings-quick-logout {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.settings-quick-logout:hover {
+  background: rgba(239, 68, 68, 0.22);
+}
+
+.settings-container {
+  max-width: 1100px;
+  margin: 36px auto 0;
+  padding: 0 20px;
+  display: flex;
+  gap: 28px;
+}
+
+.settings-sidebar {
+  flex: 0 0 280px;
+}
+
+.user-profile-summary {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(83, 199, 232, 0.2);
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.user-avatar-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #53c7e8 0%, #10b981 100%);
+  color: #060b18;
+  font-size: 20px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.user-summary-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 4px;
+}
+
+.user-summary-email {
+  font-size: 12px;
+  color: #94a3b8;
+  margin: 0 0 8px;
+  word-break: break-all;
+}
+
+.user-role-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  letter-spacing: 0.5px;
+}
+
+.user-role-badge.admin {
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+}
+
+.user-role-badge.user {
+  background: rgba(83, 199, 232, 0.2);
+  color: #53c7e8;
+}
+
+.user-role-badge.guest {
+  background: rgba(148, 163, 184, 0.2);
+  color: #cbd5e1;
+}
+
+.settings-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: #94a3b8;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.settings-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+}
+
+.settings-tab-btn.active {
+  background: rgba(83, 199, 232, 0.12);
+  border-color: rgba(83, 199, 232, 0.35);
+  color: #53c7e8;
+}
+
+.settings-content-card {
+  flex: 1;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(83, 199, 232, 0.2);
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+.settings-card-header {
+  margin-bottom: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 16px;
+}
+
+.settings-card-header h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 6px;
+}
+
+.settings-card-header p {
+  font-size: 13px;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.settings-banner {
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  margin-bottom: 20px;
+  animation: fadeUp 0.3s ease;
+}
+
+.settings-banner.success {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #10b981;
+}
+
+.settings-banner.error {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #ef4444;
+}
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.settings-row {
+  display: flex;
+  gap: 16px;
+}
+
+.settings-row .settings-field {
+  flex: 1;
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.settings-field input {
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(6, 11, 24, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.settings-field input:focus {
+  border-color: #53c7e8;
+  box-shadow: 0 0 0 2px rgba(83, 199, 232, 0.25);
+}
+
+.field-hint {
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* Password wrapper inside settings */
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.password-input-wrapper input {
+  width: 100%;
+  padding-right: 48px;
+}
+
+.password-input-wrapper .pw-toggle-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.pw-match-badge {
+  position: absolute;
+  right: 42px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #10b981;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+/* Checklist in settings */
+.password-checklist {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 6px;
+  margin-top: 10px;
+  background: rgba(6, 11, 24, 0.4);
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #64748b;
+  transition: color 0.2s;
+}
+
+.checklist-item.met {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.checklist-icon {
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.settings-form-footer {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.settings-save-btn {
+  background: linear-gradient(135deg, #53c7e8 0%, #10b981 100%);
+  color: #060b18;
+  font-size: 14px;
+  font-weight: 700;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.settings-save-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(83, 199, 232, 0.35);
+}
+
+.settings-save-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.settings-btn-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(0, 0, 0, 0.3);
+  border-top-color: #060b18;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Sessions tab */
+.session-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 12px;
+  background: rgba(6, 11, 24, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 24px;
+}
+
+.session-icon {
+  font-size: 28px;
+}
+
+.session-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.active-badge {
+  font-size: 11px;
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.session-meta {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.danger-zone-card {
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.05);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.danger-zone-card h3 {
+  font-size: 16px;
+  color: #ef4444;
+  margin: 0 0 8px;
+  font-weight: 700;
+}
+
+.danger-zone-card p {
+  font-size: 13px;
+  color: #cbd5e1;
+  line-height: 1.5;
+  margin: 0 0 16px;
+}
+
+.danger-btn {
+  background: #ef4444;
+  color: #ffffff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.danger-btn:hover {
+  background: #dc2626;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+@media (max-width: 768px) {
+  .settings-container {
+    flex-direction: column;
+  }
+  .settings-sidebar {
+    flex: none;
+    width: 100%;
+  }
+  .settings-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+}
