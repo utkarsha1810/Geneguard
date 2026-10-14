@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LearnGenetics from "./Components/Pages/LearnGenetics";
 import DNA from "./Components/DNA/DNA";
 import About from "./Components/Pages/About";
@@ -85,6 +85,7 @@ function App() {
         <Route path="/about" element={<About />} />
         <Route path="/counselling" element={<Counselling />} />
         <Route path="/learning-hub" element={<LearningHub />} />
+        <Route path="/genetic-assessment" element={<Navigate to="/learning-hub" replace />} />
 
         {/* DNA Agents & Intake */}
         <Route path="/dna" element={<DNA />} />
