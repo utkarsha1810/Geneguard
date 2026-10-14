@@ -8,7 +8,8 @@
  *   apiClient.get('/dna/configs').then(...)
  */
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5050/api';
+const rawApiUrl = (process.env.REACT_APP_API_URL || 'http://localhost:5050/api').replace(/\/+$/, '');
+const API_BASE_URL = rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl}/api`;
 
 /**
  * Default headers for all API requests

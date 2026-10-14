@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import bgImage from "../images/geneguardbg.png";
 import "./LearningHub.css";
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5050/api';
+const rawApiUrl = (process.env.REACT_APP_API_URL || 'http://localhost:5050/api').replace(/\/+$/, '');
+const API_BASE_URL = rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl}/api`;
 
 const CONDITIONS = [
   "Breast Cancer (BRCA-related)",

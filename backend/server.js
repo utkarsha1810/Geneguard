@@ -68,6 +68,10 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:3000',
   'http://127.0.0.1:3000',
+  'https://geneguard-orcin.vercel.app',
+  'https://geneguard-usoni1804-7583s-projects.vercel.app',
+  'https://geneguard-git-main-usoni1804-7583s-projects.vercel.app',
+  'https://gene-guard-beta.vercel.app',
   process.env.FRONTEND_URL,
 ].filter(Boolean);
 
@@ -76,10 +80,14 @@ app.use(
   cors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development') {
+      if (
+        allowedOrigins.includes(origin) ||
+        /\.vercel\.app$/.test(origin) ||
+        process.env.NODE_ENV === 'development'
+      ) {
         return callback(null, true);
       }
-      return callback(new Error('CORS policy: Not allowed by origin'));
+      return callback(new Error(`CORS policy: Not allowed by origin ${origin}`));
     },
     credentials: true,
   })

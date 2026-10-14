@@ -224,7 +224,8 @@ const ROLES = [
   { key: 'guest', label: 'Guest' },
 ];
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5050';
+const rawApiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5050';
+const API_BASE_URL = rawApiUrl.replace(/\/api\/?$/, '').replace(/\/+$/, '');
 
 const getPasswordStrength = (pw) => {
   if (!pw) return { score: 0, label: '', cls: '' };

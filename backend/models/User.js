@@ -30,7 +30,19 @@ const userSchema = new mongoose.Schema(
     },
     passwordHash: {
       type: String,
-      required: true,
+      required: function () {
+        return this.authProvider === 'local' && !this.googleId;
+      },
+      default: null,
+    },
+    googleId: {
+      type: String,
+      default: null,
+    },
+    authProvider: {
+      type: String,
+      enum: ['local', 'google'],
+      default: 'local',
     },
     role: {
       type: String,

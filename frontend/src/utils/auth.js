@@ -49,7 +49,8 @@ export const clearAuthSession = () => {
  */
 export const logout = async (navigate, message = '') => {
   const token = getToken();
-  const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5050';
+  const rawApiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5050';
+  const API_BASE = rawApiUrl.replace(/\/api\/?$/, '').replace(/\/+$/, '');
 
   if (token) {
     try {

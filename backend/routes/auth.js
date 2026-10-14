@@ -1245,4 +1245,87 @@ router.put('/profile', verifyToken, async (req, res) => {
   }
 });
 
+// ─── POST /api/auth/google (Google OAuth Authentication & Auto-Signup) ────────
+router.post('/google', async (req, res) => {
+  try {
+    const { email, firstName, lastName, googleId } = req.body;
+
+    if (!email || !email.trim()) {
+      return res.status(400).json({ success: false, error: 'Email is required from Google account' });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    let user = await User.findOne({ email: normalizedEmail });
+
+    if (!user) {
+      // Auto-signup for new Google users (no password required)
+      user = new User({
+        firstName: (firstName && firstName.trim()) || 'User',
+        lastName: (lastName && lastName.trim()) || '',
+        email: normalizedEmail,
+        googleId: googleId || null,
+        authProvider: 'google',
+        role: 'user',
+        isVerified: true,
+        consentGiven: true,
+        status: 'active',
+        lastLogin: new Date(),
+      });
+      await user.save();
+
+      await logAuthEvent({
+        eventType: 'USER_REGISTER',
+        status: 'SUCCESS',
+        email: normalizedEmail,
+        userId: user._id.toString(),
+        role: user.role,
+        req,
+        details: { method: 'google_oauth' },
+      });
+    } else {
+      // Existing user: Link googleId if not present and update last login
+      if (googleId && !user.googleId) {
+        user.googleId = googleId;
+      }
+      user.isVerified = true;
+      user.lastLogin = new Date();
+      await user.save();
+
+      await logAuthEvent({
+        eventType: 'LOGIN_SUCCESS',
+        status: 'SUCCESS',
+        email: normalizedEmail,
+        userId: user._id.toString(),
+        role: user.role,
+        req,
+        details: { method: 'google_oauth' },
+      });
+    }
+
+    const token = jwt.sign(
+      {
+        userId: user._id.toString(),
+        role: user.role,
+        firstName: user.firstName,
+        tokenVersion: user.tokenVersion || 0,
+      },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Google authentication successful',
+      token,
+      userId: user._id.toString(),
+      firstName: user.firstName,
+      role: user.role,
+      email: user.email,
+    });
+  } catch (error) {
+    console.error('[Google Auth API] Error:', error);
+    return res.status(500).json({ success: false, error: 'Google login failed. Please try again.' });
+  }
+});
+
 export default router;

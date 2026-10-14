@@ -6,6 +6,7 @@ import dnaBackground from '../images/image.png';
 import OtpInput from './OtpInput';
 import LogoutModal from './LogoutModal';
 import { isAuthenticated, getUser, setAuthSession, logout } from '../../utils/auth';
+import { useGoogleLogin } from '@react-oauth/google';
 
 // Translation data
 const translations = {
@@ -228,7 +229,8 @@ const GUEST_DEMO_CREDENTIALS = {
   email: 'guest@geneguard.demo',
 };
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5050';
+const rawApiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5050';
+const API_BASE_URL = rawApiUrl.replace(/\/api\/?$/, '').replace(/\/+$/, '');
 
 const getPasswordStrength = (pw) => {
   if (!pw) return { score: 0, text: '', class: '' };
@@ -263,6 +265,57 @@ const Login = () => {
   const [loginChallengeId, setLoginChallengeId] = useState('');
   const [maskedLoginEmail, setMaskedLoginEmail] = useState('');
   const [loginOtpCode, setLoginOtpCode] = useState('');
+
+  // ─── Real Google OAuth Hook ────────────────────────────────────────────────
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        setIsLoading(true);
+        setGlobalError('');
+        const userInfo = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+        }).then((r) => r.json());
+
+        const response = await fetch(`${API_BASE_URL}/api/auth/google`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: userInfo.email,
+            firstName: userInfo.given_name || userInfo.name?.split(' ')[0] || 'User',
+            lastName: userInfo.family_name || userInfo.name?.split(' ').slice(1).join(' ') || '',
+            googleId: userInfo.sub,
+          }),
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('userId', data.userId);
+          localStorage.setItem('firstName', data.firstName);
+          localStorage.setItem('role', data.role);
+          setAuthSession({
+            token: data.token,
+            user: { userId: data.userId, firstName: data.firstName, role: data.role, email: data.email || userInfo.email },
+            userId: data.userId,
+            firstName: data.firstName,
+            role: data.role,
+          });
+          setLoginSuccess(true);
+          setTimeout(() => {
+            if (data.role === 'admin') navigate('/admin');
+            else navigate('/');
+          }, 1200);
+        } else {
+          setGlobalError(data.error || 'Google login failed. Please try again.');
+        }
+      } catch (err) {
+        setGlobalError('Google login failed. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    onError: () => setGlobalError('Google login failed. Please try again.'),
+  });
   const [loginOtpError, setLoginOtpError] = useState('');
   const [loginOtpSuccess, setLoginOtpSuccess] = useState('');
   const [isVerifyingLoginOtp, setIsVerifyingLoginOtp] = useState(false);
@@ -1377,7 +1430,7 @@ const Login = () => {
                 <button
                   type="button"
                   className="social-btn"
-                  onClick={() => console.log('Continue with Google')}
+                  onClick={() => googleLogin()}
                 >
                   <svg viewBox="0 0 24 24" width="20" height="20">
                     <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.2-2.27H12v4.3h6.47c-.28 1.5-1.13 2.77-2.4 3.62v3h3.88c2.27-2.09 3.54-5.17 3.54-8.65z" />
