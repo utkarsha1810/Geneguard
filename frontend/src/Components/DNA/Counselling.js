@@ -642,7 +642,7 @@ export default function Counselling() {
               <Link to="/learn-genetics" className="dna-nav-link">Learn Genetics</Link>
               <Link to="/genetic-disorders" className="dna-nav-link">Genetic Disorders</Link>
               <Link to="/counselling" className="dna-nav-link active">Counselling</Link>
-              <Link to="/genetic-assessment" className="dna-nav-link">Genetic Assessment AI</Link>
+              <Link to="/learning-hub" className="dna-nav-link">Learning Hub</Link>
               <Link to="/dna" className="dna-nav-link">DNA Testing</Link>
               <Link to="/about" className="dna-nav-link">About Us</Link>
             </div>
@@ -697,7 +697,7 @@ export default function Counselling() {
           <Link to="/learn-genetics" className="dna-nav-link" onClick={handleLinkClick}>Learn Genetics</Link>
           <Link to="/genetic-disorders" className="dna-nav-link" onClick={handleLinkClick}>Genetic Disorders</Link>
           <Link to="/counselling" className="dna-nav-link active" onClick={handleLinkClick}>Counselling</Link>
-          <Link to="/genetic-assessment" className="dna-nav-link" onClick={handleLinkClick}>Genetic Assessment AI</Link>
+          <Link to="/learning-hub" className="dna-nav-link" onClick={handleLinkClick}>Learning Hub</Link>
           <Link to="/dna" className="dna-nav-link" onClick={handleLinkClick}>DNA Testing</Link>
           <Link to="/about" className="dna-nav-link" onClick={handleLinkClick}>About Us</Link>
         </div>
@@ -1183,7 +1183,7 @@ export default function Counselling() {
                     <li><Link to="/learn-genetics">{t('footer_learn_genetics')}</Link></li>
                     <li><Link to="/genetic-disorders">{t('footer_genetic_disorders')}</Link></li>
                     <li><Link to="/counselling">{t('footer_genetic_counseling')}</Link></li>
-                    <li><Link to="/genetic-assessment">{t('footer_ai_assessment')}</Link></li>
+                    <li><Link to="/learning-hub">Learning Hub</Link></li>
                   </ul>
                 </div>
                 <div className="footer-column">

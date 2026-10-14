@@ -8,7 +8,7 @@ import Login from "./Components/Auth/Login";
 import Signup from "./Components/Auth/Signup";
 import DNAAgentsDashboard from "./Components/DNA/DNAAgentsDashboard";
 import PatientDNAIntake from "./Components/DNA/PatientDNAIntake";
-import GeneticAssessmentAI from "./Components/Pages/GeneticAssessmentAI";
+import LearningHub from './Components/Pages/LearningHub';
 import Disorders from "./Components/Pages/Disorders";
 import AdminDashboard from "./Components/Admin/AdminDashboard";
 import GeneGuardAssistant from "./Components/AIAssistant/GeneGuardAssistant";
@@ -84,7 +84,7 @@ function App() {
         <Route path="/disorders" element={<Disorders />} />
         <Route path="/about" element={<About />} />
         <Route path="/counselling" element={<Counselling />} />
-        <Route path="/genetic-assessment" element={<GeneticAssessmentAI />} />
+        <Route path="/learning-hub" element={<LearningHub />} />
 
         {/* DNA Agents & Intake */}
         <Route path="/dna" element={<DNA />} />

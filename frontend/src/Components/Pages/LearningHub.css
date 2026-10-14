@@ -1,0 +1,610 @@
+/* ============================================
+   LEARNING HUB PAGE NAVBAR & FOOTER STYLES
+   ============================================ */
+
+.learning-hub-page-wrapper {
+  width: 100%;
+  min-height: 100vh;
+  position: relative;
+  background-color: #F3FAF8;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.learning-hub-page-wrapper .dna-main-navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  padding: 1rem 0;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-bottom: none;
+  box-shadow: none;
+}
+
+/* Scrolled State - Dark Background + White Text */
+.learning-hub-page-wrapper .dna-navbar-scrolled {
+  padding: 0.75rem 0;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(16, 185, 129, 0.15);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+}
+
+.learning-hub-page-wrapper .dna-nav-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2rem;
+}
+
+/* Logo Section */
+.learning-hub-page-wrapper .dna-nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.learning-hub-page-wrapper .dna-logo-circle {
+  width: 20px;
+  height: 20px;
+  background-color: #a7f3d0;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(167, 243, 208, 0.5);
+  flex-shrink: 0;
+}
+
+.learning-hub-page-wrapper .dna-logo-brand {
+  color: #2C3E50;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  transition: color 0.3s ease;
+  font-family: 'Quicksand', sans-serif;
+}
+
+.learning-hub-page-wrapper .dna-navbar-scrolled .dna-logo-brand {
+  color: #ffffff;
+}
+
+/* Right Section Container */
+.learning-hub-page-wrapper .dna-nav-right-section {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  flex-shrink: 0;
+}
+
+/* Nav Links */
+.learning-hub-page-wrapper .dna-nav-links {
+  display: flex !important;
+  gap: 1.5rem;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.learning-hub-page-wrapper .dna-nav-link {
+  color: #2C3E50;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  font-family: 'Quicksand', sans-serif;
+}
+
+.learning-hub-page-wrapper .dna-navbar-scrolled .dna-nav-link {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.learning-hub-page-wrapper .dna-nav-link:hover {
+  color: #4ade80;
+  transform: translateY(-1px);
+}
+
+.learning-hub-page-wrapper .dna-nav-link.active {
+  color: #0D9488;
+  font-weight: 700;
+}
+
+.learning-hub-page-wrapper .dna-navbar-scrolled .dna-nav-link.active {
+  color: #4ade80;
+  font-weight: 700;
+}
+
+/* Language Buttons */
+.learning-hub-page-wrapper .dna-language-buttons {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.learning-hub-page-wrapper .dna-lang-btn {
+  background: transparent;
+  border: 1.5px solid rgba(44, 62, 80, 0.2);
+  color: #2C3E50;
+  padding: 0.35rem 0.7rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  min-width: 40px;
+  text-align: center;
+  font-family: 'Quicksand', sans-serif;
+}
+
+.learning-hub-page-wrapper .dna-navbar-scrolled .dna-lang-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.learning-hub-page-wrapper .dna-lang-btn:hover {
+  border-color: #5FC4B8;
+  background: rgba(95, 196, 184, 0.1);
+  color: #3BA99C;
+}
+
+.learning-hub-page-wrapper .dna-navbar-scrolled .dna-lang-btn:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+.learning-hub-page-wrapper .dna-lang-btn.active {
+  background: rgba(74, 222, 128, 0.15);
+  border-color: rgba(74, 222, 128, 0.5);
+  color: #10b981;
+  font-weight: 700;
+}
+
+/* Profile Container */
+.learning-hub-page-wrapper .dna-profile-container {
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* Profile Trigger */
+.learning-hub-page-wrapper .dna-profile-trigger {
+  background: transparent;
+  border: 1.5px solid rgba(44, 62, 80, 0.2);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #2C3E50;
+  transition: all 0.3s ease;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.learning-hub-page-wrapper .dna-navbar-scrolled .dna-profile-trigger {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.learning-hub-page-wrapper .dna-profile-trigger:hover,
+.learning-hub-page-wrapper .dna-profile-trigger.active {
+  border-color: #5FC4B8;
+  background: rgba(95, 196, 184, 0.1);
+  color: #3BA99C;
+}
+
+.learning-hub-page-wrapper .dna-navbar-scrolled .dna-profile-trigger:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+.learning-hub-page-wrapper .dna-profile-icon {
+  width: 19px;
+  height: 19px;
+}
+
+/* Profile Dropdown */
+.learning-hub-page-wrapper .dna-profile-dropdown {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: 190px;
+  background: rgba(15, 23, 42, 0.97);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 0.5rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+  animation: learningHub-fadeIn 0.25s ease forwards;
+  z-index: 1001;
+}
+
+@keyframes learningHub-fadeIn {
+  from { 
+    opacity: 0; 
+    transform: translateY(-8px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+.learning-hub-page-wrapper .dna-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.7rem 0.9rem;
+  color: #cbd5e1;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  margin-bottom: 0.15rem;
+  font-family: 'Quicksand', sans-serif;
+}
+
+.learning-hub-page-wrapper .dna-dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #f1f5f9;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* Hamburger Menu */
+.learning-hub-page-wrapper .dna-hamburger-menu {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  cursor: pointer;
+  padding: 8px;
+  z-index: 1002;
+  background: transparent;
+  border: none;
+  flex-shrink: 0;
+}
+
+.learning-hub-page-wrapper .dna-hamburger-line {
+  width: 24px;
+  height: 2px;
+  background-color: #2C3E50;
+  transition: all 0.3s ease;
+  border-radius: 2px;
+}
+
+.learning-hub-page-wrapper .dna-navbar-scrolled .dna-hamburger-line {
+  background-color: #ffffff;
+}
+
+.learning-hub-page-wrapper .dna-hamburger-menu.active .dna-hamburger-line:nth-child(1) {
+  transform: rotate(45deg) translate(6px, 6px);
+}
+
+.learning-hub-page-wrapper .dna-hamburger-menu.active .dna-hamburger-line:nth-child(2) {
+  opacity: 0;
+}
+
+.learning-hub-page-wrapper .dna-hamburger-menu.active .dna-hamburger-line:nth-child(3) {
+  transform: rotate(-45deg) translate(6px, -6px);
+}
+
+/* Mobile Menu Overlay */
+.learning-hub-page-wrapper .dna-mobile-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.98);
+  backdrop-filter: blur(20px);
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  animation: learningHub-fadeIn 0.3s ease;
+}
+
+.learning-hub-page-wrapper .dna-mobile-menu-overlay .dna-nav-link {
+  font-size: 1.5rem;
+  color: #cbd5e1;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  font-family: 'Quicksand', sans-serif;
+}
+
+.learning-hub-page-wrapper .dna-mobile-menu-overlay .dna-nav-link:hover,
+.learning-hub-page-wrapper .dna-mobile-menu-overlay .dna-nav-link.active {
+  color: #4ade80;
+  transform: scale(1.05);
+}
+
+/* Responsive Navbar */
+@media (max-width: 1200px) {
+  .learning-hub-page-wrapper .dna-nav-links { 
+    gap: 1.25rem; 
+  }
+  .learning-hub-page-wrapper .dna-nav-link { 
+    font-size: 0.85rem; 
+  }
+}
+
+@media (max-width: 1024px) {
+  .learning-hub-page-wrapper .dna-nav-links { 
+    display: none !important; 
+  }
+  .learning-hub-page-wrapper .dna-hamburger-menu { 
+    display: flex; 
+  }
+  .learning-hub-page-wrapper .dna-nav-right-section { 
+    gap: 1rem; 
+  }
+}
+
+@media (max-width: 768px) {
+  .learning-hub-page-wrapper .dna-nav-content { 
+    padding: 0 1.5rem; 
+  }
+  .learning-hub-page-wrapper .dna-lang-btn { 
+    padding: 0.3rem 0.6rem; 
+    font-size: 0.75rem; 
+  }
+  .learning-hub-page-wrapper .dna-logo-brand { 
+    font-size: 1.1rem; 
+  }
+}
+
+@media (max-width: 480px) {
+  .learning-hub-page-wrapper .dna-language-buttons { 
+    display: none; 
+  }
+  .learning-hub-page-wrapper .dna-nav-content { 
+    padding: 0 1rem; 
+  }
+}
+
+/* ============================================
+   FOOTER STYLES
+   ============================================ */
+
+.learning-hub-page-wrapper .main-footer {
+  position: relative;
+  background: linear-gradient(180deg, #0f172a 0%, #020617 100%);
+  padding: 80px 24px 40px;
+  width: 100%;
+  overflow: hidden;
+  border-top: 1px solid rgba(16, 185, 129, 0.15);
+  box-sizing: border-box;
+  margin-top: auto;
+}
+
+.learning-hub-page-wrapper .footer-bg-grid {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(136, 247, 208, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(136, 247, 208, 0.02) 1px, transparent 1px);
+  background-size: 50px 50px;
+  mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent);
+  z-index: 0;
+}
+
+.learning-hub-page-wrapper .footer-gradient-orb {
+  position: absolute;
+  top: -200px;
+  right: -200px;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, transparent 70%);
+  filter: blur(100px);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.learning-hub-page-wrapper .footer-container {
+  position: relative;
+  z-index: 10;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.learning-hub-page-wrapper .footer-top {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 60px;
+  margin-bottom: 60px;
+}
+
+@media (min-width: 1024px) {
+  .learning-hub-page-wrapper .footer-top {
+    grid-template-columns: 1.2fr 2fr;
+    gap: 80px;
+  }
+}
+
+.learning-hub-page-wrapper .footer-brand-section {
+  max-width: 400px;
+  text-align: left;
+}
+
+.learning-hub-page-wrapper .footer-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  text-decoration: none;
+}
+
+.learning-hub-page-wrapper .footer-logo-circle {
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+  border-radius: 50%;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+  animation: learningHub-footer-pulse 3s ease-in-out infinite;
+}
+
+.learning-hub-page-wrapper .footer-logo-text {
+  font-size: 1.75rem;
+  font-weight: 700;
+  background: linear-gradient(90deg, #4ade80 0%, #22d3ee 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.02em;
+}
+
+.learning-hub-page-wrapper .footer-tagline {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: #94a3b8 !important;
+  margin-bottom: 32px;
+}
+
+.learning-hub-page-wrapper .footer-social {
+  display: flex;
+  gap: 16px;
+}
+
+.learning-hub-page-wrapper .social-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+}
+
+.learning-hub-page-wrapper .social-link:hover {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #10b981;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+.learning-hub-page-wrapper .footer-links-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 40px;
+}
+
+@media (min-width: 640px) {
+  .learning-hub-page-wrapper .footer-links-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 32px;
+  }
+}
+
+.learning-hub-page-wrapper .footer-column-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 20px;
+  position: relative;
+  padding-left: 12px;
+  text-align: left;
+}
+
+.learning-hub-page-wrapper .footer-column-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 16px;
+  background: linear-gradient(180deg, #10b981 0%, #06b6d4 100%);
+  border-radius: 2px;
+}
+
+.learning-hub-page-wrapper .footer-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: left;
+}
+
+.learning-hub-page-wrapper .footer-links li a {
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 0.9375rem;
+  transition: all 0.2s ease;
+  display: inline-block;
+}
+
+.learning-hub-page-wrapper .footer-links li a:hover {
+  color: #e2e8f0;
+  transform: translateX(4px);
+}
+
+.learning-hub-page-wrapper .footer-divider {
+  position: relative;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.05);
+  margin: 60px 0;
+}
+
+.learning-hub-page-wrapper .divider-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 300px;
+  height: 40px;
+  background: radial-gradient(ellipse, rgba(16, 185, 129, 0.3) 0%, transparent 70%);
+  filter: blur(20px);
+  animation: learningHub-dna-glow-pulse 4s ease-in-out infinite;
+}
+
+.learning-hub-page-wrapper .footer-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding-top: 20px;
+}
+
+@media (min-width: 768px) {
+  .learning-hub-page-wrapper .footer-bottom {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+}
+
+.learning-hub-page-wrapper .footer-copyright {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0;
+}

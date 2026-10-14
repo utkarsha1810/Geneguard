@@ -24,6 +24,7 @@ import authRouter from './routes/auth.js';
 import adminRouter from './routes/adminRoutes.js';
 import doctorsRouter from './routes/doctors.js';
 import chatRouter from './routes/chat.js';
+import learningRoutes from './routes/learningRoutes.js';
 
 // Service imports
 import {
@@ -117,6 +118,9 @@ app.use('/api', consultationsRouter);
 
 // AI Chatbot streaming endpoint (POST /api/chat)
 app.use('/api', chatRouter);
+
+// Learning recommendations endpoint (Learning Hub)
+app.use('/api', learningRoutes);
 
 // Patient evaluation endpoint
 app.post('/api/dna/patient/evaluate', (req, res) => {

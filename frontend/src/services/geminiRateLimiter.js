@@ -1,7 +1,7 @@
 /**
  * Gemini API Rate Limiter, Retry, Cache & Key Rotation
  * ─────────────────────────────────────────────────────
- * Shared singleton used by geminiDirectService.js and GeneticAssessmentAI.js
+ * Shared singleton used across frontend Gemini services
  *
  * Features:
  *  • Multi-key rotation pool (up to 4 API keys)

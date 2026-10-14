@@ -26,7 +26,7 @@ const translations = {
 
       counselling: 'Counselling',
 
-      geneticAssessment: 'Genetic Assessment AI',
+      geneticAssessment: 'Learning Hub',
 
       dnaTesting: 'DNA Testing',
 
@@ -480,7 +480,7 @@ const Footer = ({ t }) => {
 
                 <li><Link to="/counselling">{t.navLinks.counselling}</Link></li>
 
-                <li><Link to="/genetic-assessment">{t.navLinks.geneticAssessment}</Link></li>
+                <li><Link to="/learning-hub">Learning Hub</Link></li>
 
               </ul>
 
@@ -814,7 +814,7 @@ const About = () => {
 
               <Link to="/counselling" className="dna-nav-link">{t.navLinks.counselling}</Link>
 
-              <Link to="/genetic-assessment" className="dna-nav-link">{t.navLinks.geneticAssessment}</Link>
+              <Link to="/learning-hub" className="dna-nav-link">Learning Hub</Link>
 
               <Link to="/dna" className="dna-nav-link">{t.navLinks.dnaTesting}</Link>
 
@@ -916,7 +916,7 @@ const About = () => {
 
           <Link to="/counselling" className="dna-nav-link" onClick={() => setIsMobileMenuOpen(false)}>{t.navLinks.counselling}</Link>
 
-          <Link to="/genetic-assessment" className="dna-nav-link" onClick={() => setIsMobileMenuOpen(false)}>{t.navLinks.geneticAssessment}</Link>
+          <Link to="/learning-hub" className="dna-nav-link" onClick={() => setIsMobileMenuOpen(false)}>Learning Hub</Link>
 
           <Link to="/dna" className="dna-nav-link" onClick={() => setIsMobileMenuOpen(false)}>{t.navLinks.dnaTesting}</Link>
 

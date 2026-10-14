@@ -9,7 +9,7 @@ const translations = {
     nav_learn: 'Learn Genetics',
     nav_disorders: 'Genetic Disorders',
     nav_counseling: 'Genetic Counseling',
-    nav_ai: 'Genetic Assessment AI',
+    nav_ai: 'Learning Hub',
     nav_dna: 'DNA Testing',
     nav_about: 'About Us',
     nav_login: 'Login',
@@ -369,7 +369,7 @@ const Footer = ({ t }) => {
                 <li><Link to="/learn-genetics">{t('footer_learn')}</Link></li>
                 <li><Link to="/genetic-disorders">{t('footer_disorders')}</Link></li>
                 <li><Link to="/counselling">{t('footer_counseling')}</Link></li>
-                <li><Link to="/genetic-assessment">{t('footer_ai')}</Link></li>
+                <li><Link to="/learning-hub">Learning Hub</Link></li>
               </ul>
             </div>
             <div className="footer-column">
@@ -535,7 +535,7 @@ const LearnGenetics = () => {
               <Link to="/learn-genetics" className="nav-link active">{t('nav_learn')}</Link>
               <Link to="/genetic-disorders" className="nav-link">{t('nav_disorders')}</Link>
               <Link to="/counselling" className="nav-link">{t('nav_counseling')}</Link>
-              <Link to="/genetic-assessment" className="nav-link">{t('nav_ai')}</Link>
+              <Link to="/learning-hub" className="nav-link">Learning Hub</Link>
               <Link to="/dna" className="nav-link">{t('nav_dna')}</Link>
               <Link to="/about" className="nav-link">{t('nav_about')}</Link>
             </div>
@@ -600,7 +600,7 @@ const LearnGenetics = () => {
           <Link to="/learn-genetics" className="nav-link active" onClick={handleLinkClick}>{t('nav_learn')}</Link>
           <Link to="/genetic-disorders" className="nav-link" onClick={handleLinkClick}>{t('nav_disorders')}</Link>
           <Link to="/counselling" className="nav-link" onClick={handleLinkClick}>{t('nav_counseling')}</Link>
-          <Link to="/genetic-assessment" className="nav-link" onClick={handleLinkClick}>{t('nav_ai')}</Link>
+          <Link to="/learning-hub" className="nav-link" onClick={handleLinkClick}>Learning Hub</Link>
           <Link to="/dna" className="nav-link" onClick={handleLinkClick}>{t('nav_dna')}</Link>
           <Link to="/about" className="nav-link" onClick={handleLinkClick}>{t('nav_about')}</Link>
         </div>

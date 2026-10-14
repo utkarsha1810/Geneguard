@@ -201,7 +201,7 @@ const Register = () => {
           <li><Link to="/learn-genetics">Learn Genetics</Link></li>
           <li><Link to="/genetic-disorders">Genetic Disorders</Link></li>
           <li><Link to="/counselling">Counselling</Link></li>
-          <li><Link to="/genetic-assessment">Genetic Assessment AI</Link></li>
+          <li><Link to="/learning-hub">Learning Hub</Link></li>
           <li><Link to="/dna">DNA Testing</Link></li>
           <li><Link to="/about">About Us</Link></li>
         </ul>

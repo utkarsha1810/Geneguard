@@ -11,7 +11,7 @@ const translations = {
       learnGenetics: 'Learn Genetics',
       geneticDisorders: 'Genetic Disorders',
       counselling: 'Counselling',
-      geneticAssessment: 'Genetic Assessment AI',
+      geneticAssessment: 'Learning Hub',
       dnaTesting: 'DNA Testing',
       aboutUs: 'About Us',
       login: 'Login',
@@ -53,7 +53,7 @@ const translations = {
       learnGenetics: 'Learn Genetics',
       geneticDisorders: 'Genetic Disorders',
       geneticCounseling: 'Genetic Counseling',
-      aiAssessment: 'AI Assessment',
+      aiAssessment: 'Learning Hub',
       dnaTesting: 'DNA Testing',
       reportsInsights: 'Reports & Insights',
       consultations: 'Consultations',
@@ -277,7 +277,7 @@ const Navbar = ({ language, setLanguage }) => {
               <Link to="/learn-genetics" className="home-nav-link">{t.navLinks.learnGenetics}</Link>
               <Link to="/genetic-disorders" className="home-nav-link">{t.navLinks.geneticDisorders}</Link>
               <Link to="/counselling" className="home-nav-link">{t.navLinks.counselling}</Link>
-              <Link to="/genetic-assessment" className="home-nav-link">{t.navLinks.geneticAssessment}</Link>
+              <Link to="/learning-hub" className="home-nav-link">Learning Hub</Link>
               <Link to="/dna" className="home-nav-link">{t.navLinks.dnaTesting}</Link>
               <Link to="/about" className="home-nav-link">{t.navLinks.aboutUs}</Link>
             </div>
@@ -364,7 +364,7 @@ const Navbar = ({ language, setLanguage }) => {
           <Link to="/learn-genetics" className="home-nav-link" onClick={handleLinkClick}>{t.navLinks.learnGenetics}</Link>
           <Link to="/genetic-disorders" className="home-nav-link" onClick={handleLinkClick}>{t.navLinks.geneticDisorders}</Link>
           <Link to="/genetic-counseling" className="home-nav-link" onClick={handleLinkClick}>{t.navLinks.counselling}</Link>
-          <Link to="/genetic-assessment" className="home-nav-link" onClick={handleLinkClick}>{t.navLinks.geneticAssessment}</Link>
+          <Link to="/learning-hub" className="home-nav-link" onClick={handleLinkClick}>Learning Hub</Link>
           <Link to="/dna-testing" className="home-nav-link" onClick={handleLinkClick}>{t.navLinks.dnaTesting}</Link>
           <Link to="/about" className="home-nav-link" onClick={handleLinkClick}>{t.navLinks.aboutUs}</Link>
         </div>
@@ -546,7 +546,7 @@ const Footer = ({ language }) => {
                 <li><Link to="/learn-genetics">{tf.learnGenetics}</Link></li>
                 <li><Link to="/genetic-disorders">{tf.geneticDisorders}</Link></li>
                 <li><Link to="/counselling">{tf.geneticCounseling}</Link></li>
-                <li><Link to="/genetic-assessment">{tf.aiAssessment}</Link></li>
+                <li><Link to="/learning-hub">Learning Hub</Link></li>
               </ul>
             </div>
             <div className="home-footer-col">

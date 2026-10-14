@@ -110,6 +110,26 @@ export const apiClient = {
       geneName,
     });
   },
+
+  /**
+   * Get Learning Recommendations
+   */
+  getLearningRecommendations: async (data) => {
+    return apiClient.post('/learning-recommendations', data);
+  },
+};
+
+/**
+ * Get Learning Recommendations helper
+ */
+export const getLearningRecommendations = async (data) => {
+  const url = `${process.env.REACT_APP_API_URL || 'http://localhost:5050/api'}/learning-recommendations`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: defaultHeaders,
+    body: JSON.stringify(data),
+  });
+  return handleResponse(response);
 };
 
 /**

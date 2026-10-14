@@ -10,7 +10,7 @@ const translations = {
       learnGenetics: 'Learn Genetics',
       geneticDisorders: 'Genetic Disorders',
       counselling: 'Counselling',
-      geneticAssessment: 'Genetic Assessment AI',
+      geneticAssessment: 'Learning Hub',
       dnaTesting: 'DNA Testing',
       aboutUs: 'About Us',
       login: 'Login',
@@ -660,7 +660,7 @@ const Footer = ({ t }) => {
                 <li><Link to="/learn-genetics">{t.footer.platformLinks[0]}</Link></li>
                 <li><Link to="/genetic-disorders">{t.footer.platformLinks[1]}</Link></li>
                 <li><Link to="/counselling">{t.footer.platformLinks[2]}</Link></li>
-                <li><Link to="/genetic-assessment">{t.footer.platformLinks[3]}</Link></li>
+                <li><Link to="/learning-hub">Learning Hub</Link></li>
               </ul>
             </div>
             <div className="dna-footer-column">
@@ -749,7 +749,7 @@ const DNA = () => {
               <Link to="/learn-genetics" className="dna-nav-link">{t.nav.learnGenetics}</Link>
               <Link to="/genetic-disorders" className="dna-nav-link">{t.nav.geneticDisorders}</Link>
               <Link to="/counselling" className="dna-nav-link">{t.nav.counselling}</Link>
-              <Link to="/genetic-assessment" className="dna-nav-link">{t.nav.geneticAssessment}</Link>
+              <Link to="/learning-hub" className="dna-nav-link">Learning Hub</Link>
               <Link to="/dna" className="dna-nav-link active">{t.nav.dnaTesting}</Link>
               <Link to="/about" className="dna-nav-link">{t.nav.aboutUs}</Link>
             </div>
@@ -804,7 +804,7 @@ const DNA = () => {
           <Link to="/learn-genetics" className="dna-nav-link" onClick={() => setIsMobileMenuOpen(false)}>{t.nav.learnGenetics}</Link>
           <Link to="/genetic-disorders" className="dna-nav-link" onClick={() => setIsMobileMenuOpen(false)}>{t.nav.geneticDisorders}</Link>
           <Link to="/counselling" className="dna-nav-link" onClick={() => setIsMobileMenuOpen(false)}>{t.nav.counselling}</Link>
-          <Link to="/genetic-assessment" className="dna-nav-link" onClick={() => setIsMobileMenuOpen(false)}>{t.nav.geneticAssessment}</Link>
+          <Link to="/learning-hub" className="dna-nav-link" onClick={() => setIsMobileMenuOpen(false)}>Learning Hub</Link>
           <Link to="/dna" className="dna-nav-link active" onClick={() => setIsMobileMenuOpen(false)}>{t.nav.dnaTesting}</Link>
           <Link to="/about" className="dna-nav-link" onClick={() => setIsMobileMenuOpen(false)}>{t.nav.aboutUs}</Link>
         </div>
